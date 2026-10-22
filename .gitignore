@@ -1,0 +1,17 @@
+.android-toolchain/
+android-app/.gradle/
+android-app/app/build/
+android-app/build/
+**/__pycache__/
+*.pyc
+.release-private/
+.release-build/
+.work/
+release-artifacts/
+GITHUB_WEB_UPLOAD/
+*.jks
+*.keystore
+*.p12
+*.pfx
+android-app/local.properties
+android-app/app/src/main/assets/

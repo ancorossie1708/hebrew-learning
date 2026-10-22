@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#153b4a">
+  <title>Hebrew Learning — screen prototype</title>
+  <style>
+    :root { color-scheme: light; --ink:#17343c; --muted:#5a7078; --sea:#0b7e83; --soft:#e9f5f3; --paper:#fff; --line:#d9e5e5; }
+    * { box-sizing:border-box; }
+    [hidden] { display:none !important; }
+    body { margin:0; background:#f3f7f6; color:var(--ink); font:17px/1.45 system-ui,Arial,sans-serif; }
+    button { font:inherit; cursor:pointer; }
+    .shell { max-width:470px; min-height:100vh; margin:auto; background:var(--paper); box-shadow:0 0 35px #153b4a12; }
+    header { background:#153b4a; color:white; padding:18px 20px 20px; }
+    .top { display:flex; align-items:center; justify-content:space-between; gap:12px; container-type:inline-size; }
+    .brand { font-weight:800; letter-spacing:.02em; font-size:clamp(16px,5vw,20px); }
+    body.home-screen .brand { font-size:clamp(22px,7.5vw,37px); font-size:clamp(22px,8.6cqw,37px); line-height:1.1; white-space:nowrap; }
+    .header-controls { display:flex; align-items:center; gap:8px; }
+    .settings-open { color:white; background:transparent; border:1px solid #ffffff77; border-radius:10px; width:44px; height:44px; font-size:27px; line-height:1; }
+    .settings-open { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .settings-open svg { width:30px; height:30px; }
+    body.tablet-layout .settings-open svg { width:38px; height:38px; }
+    .topic-prompt { text-align:center; font-size:32px; margin:22px 0 20px; }
+    .back { border:1px solid #ffffff77; color:white; background:transparent; border-radius:10px; padding:6px 12px; }
+    .eyebrow { color:#b8dcda; font-size:13px; margin:14px 0 3px; text-transform:uppercase; letter-spacing:.1em; }
+    h1 { font-size:28px; line-height:1.15; margin:0; }
+    main { padding:20px; padding-bottom:44px; }
+    p { margin:0 0 16px; }
+    .muted { color:var(--muted); }
+    .notice { background:#fff6e8; border:1px solid #f0d8aa; border-radius:12px; padding:12px 14px; font-size:14px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .topic, .word-row { width:100%; text-align:left; border:1px solid var(--line); border-radius:16px; background:#fff; padding:15px; }
+    .topic:hover,.word-row:hover { border-color:var(--sea); background:#f7fcfb; }
+    .topic .star-icons { display:grid; width:max-content; margin-top:10px; font-size:clamp(16px,4.7vw,22px); gap:4px; }
+    .topic-progress { display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+    .reset-stars { padding:7px 11px; border:1px solid var(--line); border-radius:10px; background:white; color:var(--muted); font-size:14px; }
+    .reset-stars:hover { border-color:var(--sea); color:var(--sea); }
+    .topic .icon { font-size:27px; display:block; margin-bottom:7px; }
+    .word-list { display:grid; gap:10px; }
+    .word-row { display:flex; align-items:center; gap:8px; padding:8px; }
+    .word-open { display:flex; align-items:center; gap:12px; flex:1; min-width:0; padding:0; border:0; background:transparent; text-align:left; color:var(--ink); }
+    .word-row img { width:62px; height:62px; object-fit:cover; border-radius:11px; }
+    .word-row strong { display:block; font-size:19px; }
+    .word-row small { display:block; color:var(--muted); }
+    .word-row .sound { display:block; color:var(--sea); font-weight:700; font-size:15px; }
+    .hero { width:100%; aspect-ratio:1/1; max-height:350px; object-fit:cover; border-radius:20px; background:#e8eeee; }
+    .counter { margin:12px 0 4px; color:var(--muted); font-size:14px; }
+    .quiz-meaning { text-align:center; font-size:36px; font-weight:750; line-height:1.2; margin:14px 0 8px; }
+    .quiz-counter { text-align:center; margin:0 0 14px; }
+    .hebrew { direction:rtl; text-align:center; font-size:47px; font-weight:750; line-height:1.25; margin:13px 0 4px; }
+    .pronunciation { text-align:center; color:var(--sea); font-size:22px; font-weight:700; }
+    .translation { text-align:center; font-size:20px; margin:3px 0 19px; }
+    .primary, .secondary { display:block; width:100%; border-radius:14px; padding:13px 15px; font-weight:750; margin:12px 0; }
+    .primary { border:1px solid var(--sea); background:var(--sea); color:#fff; }
+    .secondary { border:1px solid var(--sea); background:#fff; color:var(--sea); }
+    .primary:disabled,.secondary:disabled { opacity:.48; cursor:default; }
+    .controls { display:flex; gap:10px; }
+    .controls button { flex:1; }
+    .options { display:grid; gap:10px; }
+    .option { display:flex; align-items:stretch; gap:8px; width:100%; padding:8px; border:1px solid var(--line); border-radius:13px; background:white; }
+    .answer-select { flex:1; min-width:0; padding:5px 8px; border:0; background:transparent; text-align:left; color:var(--ink); }
+    .answer-select .choice-hebrew { display:block; direction:rtl; text-align:left; font-size:25px; font-weight:700; }
+    .answer-select .choice-sound { display:block; color:var(--sea); font-size:16px; font-weight:700; }
+    .answer-select:disabled { cursor:default; }
+    .audio-choice { flex:0 0 48px; min-height:48px; border:1px solid var(--sea); border-radius:10px; background:var(--soft); color:var(--sea); font-size:20px; }
+    .audio-choice:disabled { opacity:.4; cursor:default; }
+    .option.correct { background:#e3f5e8; border-color:#3f9e66; }
+    .option.wrong { background:#fff0ec; border-color:#d6836d; }
+    .option.eliminated .answer-select { opacity:.5; }
+    .quiz-rewards { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 14px; color:var(--muted); font-size:14px; }
+    .star-icons { display:inline-grid; grid-template-columns:repeat(5,1em); align-items:center; gap:5px; color:#c4860f; font-size:25px; vertical-align:middle; }
+    .star-icons svg { display:block; width:1em; height:1em; flex-shrink:0; }
+    .star-empty { color:#a9b5b8; }
+    .reward-total { margin-top:8px; color:#805a11; font-weight:700; }
+    .quiz-result { text-align:center; padding:30px 0 15px; }
+    .quiz-result .star-icons { font-size:47px; gap:8px; }
+    .quiz-result h2 { font-size:25px; margin:18px 0 8px; }
+    .option.quiz-shake { animation:answer-shake 380ms ease-in-out; }
+    .quiz-celebration { position:fixed; inset:0; z-index:20; pointer-events:none; overflow:hidden; }
+    .quiz-spark { position:absolute; width:5px; height:5px; border-radius:50%; background:var(--spark-color); opacity:0; animation:answer-spark 650ms ease-out forwards; animation-delay:var(--delay); }
+    @keyframes answer-shake {
+      0%,100% { transform:translateX(0); }
+      20%,60% { transform:translateX(-5px); }
+      40%,80% { transform:translateX(5px); }
+    }
+    @keyframes answer-spark {
+      0% { opacity:0; transform:translate(0,0) scale(.4); }
+      15% { opacity:.85; }
+      70% { opacity:.65; }
+      100% { opacity:0; transform:translate(var(--dx),var(--dy)) scale(.65); }
+    }
+    @media(prefers-reduced-motion:reduce) {
+      .option.quiz-shake,.quiz-spark { animation:none; }
+      .quiz-celebration { display:none; }
+    }
+    .feedback { min-height:25px; font-weight:700; margin:12px 0; }
+    .progress { background:var(--soft); padding:13px 15px; border-radius:13px; margin-bottom:18px; }
+    .progress strong { color:var(--sea); }
+    .milestone-track { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:15px; }
+    .milestone-badge { display:flex; flex-direction:column; align-items:center; gap:3px; border:1px solid #c7d8d7; border-radius:12px; padding:7px 2px; font-size:13px; }
+    .milestone-badge>span { font-size:23px; }
+    .milestone-badge.locked { opacity:.45; filter:grayscale(1); }
+    .milestone-badge.unlocked { background:#fff8db; border-color:#dcb756; }
+    .milestone-badge.special.unlocked { background:#f2eaff; border-color:#a790cf; }
+    .milestone-badge.grand.unlocked { background:#ffe9b2; border:2px solid #bc8619; }
+    .milestone-dialog { box-sizing:border-box; width:calc(100% - 40px); max-width:380px; padding:28px 24px 18px; border:2px solid #dfbf65; border-radius:24px; color:var(--ink); background:#fffdf6; text-align:center; overflow:visible; box-shadow:0 15px 60px #102f3c55; }
+    .milestone-dialog::backdrop { background:#102f3c99; }
+    .milestone-dialog h2 { font-size:30px; margin:8px 0; }
+    .milestone-dialog #milestone-count { font-size:24px; color:#94630e; font-weight:800; margin-bottom:12px; }
+    .milestone-dialog.special { border-color:#ad8cdd; background:linear-gradient(145deg,#fff,#f1e9ff); }
+    .milestone-dialog.grand { border:3px solid #d5a32c; background:linear-gradient(145deg,#fff9db,#fff,#ffe5ac); }
+    .milestone-dialog .milestone-medal { font-size:76px; line-height:1.2; animation:milestone-pop 650ms ease-out; }
+    .milestone-dialog.special .milestone-medal { font-size:90px; }
+    .milestone-dialog.grand .milestone-medal { font-size:110px; animation:milestone-pop 900ms ease-out; }
+    .milestone-dialog .quiz-celebration { z-index:1; }
+    @keyframes milestone-pop { 0%{transform:scale(.5) rotate(-12deg);opacity:0} 65%{transform:scale(1.1) rotate(5deg);opacity:1} 100%{transform:scale(1) rotate(0)} }
+    @media(prefers-reduced-motion:reduce) { .milestone-dialog .milestone-medal { animation:none; } }
+    body.without-pictures .hero,body.without-pictures .word-row img { display:none; }
+    .settings-dialog { width:calc(100% - 32px); max-width:410px; max-height:calc(100dvh - 48px); padding:24px; border:1px solid var(--line); border-radius:22px; background:var(--paper); color:var(--ink); box-shadow:0 15px 60px #102f3c55; }
+    .settings-dialog::backdrop { background:#102f3c99; }
+    .settings-dialog h2 { margin:0; font-size:27px; }
+    .settings-dialog .settings-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .settings-close { border:1px solid var(--line); border-radius:10px; min-height:44px; padding:6px 12px; background:white; color:var(--ink); }
+    .setting-row { display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:56px; border-top:1px solid var(--line); padding:12px 0; }
+    .setting-row input[type=checkbox] { width:24px; height:24px; accent-color:var(--sea); flex-shrink:0; }
+    .volume-label { display:flex; justify-content:space-between; padding:8px 0; }
+    .settings-dialog input[type=range] { width:100%; height:36px; accent-color:var(--sea); margin:0 0 12px; }
+    .reset-game { border-color:#c38d7e; color:#923f2d; margin-top:22px; }
+    .reset-confirm { padding:14px; background:#fff2ec; border:1px solid #e5baa9; border-radius:12px; }
+    .reset-confirm p { margin-bottom:10px; }
+    .settings-dialog select { width:100%; min-height:48px; padding:9px; border:1px solid var(--line); border-radius:10px; background:white; color:var(--ink); font:inherit; margin:4px 0 16px; }
+    .layout-label { display:block; border-top:1px solid var(--line); padding-top:16px; }
+    body.tablet-layout .shell { width:100%; max-width:1920px; }
+    body.tablet-layout header { padding:22px 32px; }
+    body.tablet-layout main { padding:28px 32px 36px; }
+    body.tablet-layout.home-screen .brand { font-size:clamp(26px,4.5vw,64px); }
+    body.tablet-layout .header-controls button { min-height:56px; min-width:56px; font-size:24px; }
+    body.tablet-layout .settings-open { font-size:36px; }
+    body.tablet-layout .primary,body.tablet-layout .secondary { min-height:64px; font-size:24px; }
+    @media(min-width:900px) {
+      body.tablet-layout { font-size:22px; }
+      body.tablet-layout.home-screen main { display:grid; grid-template-columns:300px minmax(0,1fr); gap:20px 28px; align-items:start; }
+      body.tablet-layout.home-screen .progress { grid-column:1; grid-row:1 / span 2; margin:0; }
+      body.tablet-layout.home-screen .topic-prompt { grid-column:2; margin:0; font-size:38px; }
+      body.tablet-layout.home-screen .grid { grid-column:2; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+      body.tablet-layout .topic { padding:20px; min-height:150px; }
+      body.tablet-layout .topic .star-icons { font-size:25px; }
+      body.tablet-layout .word-list { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+      body.tablet-layout .word-row { min-height:104px; padding:12px; }
+      body.tablet-layout .word-row img { width:80px; height:80px; }
+      body.tablet-layout .word-row strong { font-size:28px; }
+      body.tablet-layout .word-row .sound { font-size:21px; }
+      body.tablet-layout .audio-choice { flex-basis:64px; min-height:64px; font-size:28px; }
+      body.tablet-layout .lesson-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:36px; align-items:center; }
+      body.tablet-layout .hero { max-height:calc(100vh - 200px); }
+      body.tablet-layout .hebrew { font-size:70px; }
+      body.tablet-layout .pronunciation { font-size:30px; }
+      body.tablet-layout .translation { font-size:30px; }
+      body.tablet-layout .quiz-meaning { font-size:46px; }
+      body.tablet-layout .option { min-height:90px; }
+      body.tablet-layout .answer-select .choice-hebrew { font-size:34px; }
+      body.tablet-layout .answer-select .choice-sound { font-size:24px; }
+      body.tablet-layout.without-pictures .lesson-layout { display:block; max-width:900px; margin:auto; }
+    }
+    @media(min-width:1400px) {
+      body.tablet-layout.home-screen main { grid-template-columns:360px minmax(0,1fr); gap:24px 32px; }
+      body.tablet-layout.home-screen .grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:20px; }
+      body.tablet-layout .topic { font-size:25px; min-height:180px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <header><div class="top"><span class="brand">HEBREW LEARNING</span><div class="header-controls"><button class="back" id="back" hidden>Back</button><button class="settings-open" id="settings-open" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><polygon points="9.37,3.92 9.90,1.20 14.10,1.20 14.63,3.92 15.86,4.43 18.15,2.88 21.12,5.85 19.57,8.14 20.08,9.37 22.80,9.90 22.80,14.10 20.08,14.63 19.57,15.86 21.12,18.15 18.15,21.12 15.86,19.57 14.63,20.08 14.10,22.80 9.90,22.80 9.37,20.08 8.14,19.57 5.85,21.12 2.88,18.15 4.43,15.86 3.92,14.63 1.20,14.10 1.20,9.90 3.92,9.37 4.43,8.14 2.88,5.85 5.85,2.88 8.14,4.43" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div><div class="eyebrow" id="eyebrow" hidden></div><h1 id="title" hidden></h1></header>
+  <main id="main"></main>
+</div>
+<dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
+  <div class="settings-top"><h2 id="settings-title">Settings</h2><button class="settings-close" id="settings-close">Close</button></div>
+  <label class="setting-row" for="setting-sound"><span>Sound</span><input id="setting-sound" type="checkbox" checked></label>
+  <label class="volume-label" for="setting-volume"><span>Volume</span><output id="volume-value" for="setting-volume">100%</output></label>
+  <input id="setting-volume" type="range" min="0" max="100" step="1" value="100">
+  <label class="setting-row" for="setting-pictures"><span>Show pictures</span><input id="setting-pictures" type="checkbox" checked></label>
+  <label class="layout-label" for="setting-layout">Screen layout</label><select id="setting-layout"><option value="phone">Phone — portrait</option><option value="ktc-24">KTC 24.5″ — 1920×1080 (16:9)</option></select>
+  <div id="native-updates" hidden><p id="app-version" class="muted"></p><button class="secondary" id="check-updates">Check for updates</button><p class="muted" id="native-update-status" role="status"></p></div>
+  <button class="secondary reset-game" id="reset-game">Reset game</button>
+  <div class="reset-confirm" id="reset-confirm" hidden><p>Reset all stars, rewards, practised words and settings?</p><div class="controls"><button class="secondary" id="reset-cancel">Cancel</button><button class="primary" id="reset-confirm-button">Reset game</button></div></div>
+</dialog>
+<script id="seed" type="application/json">__SEED_DATA__</script>
+<script>__PREFERENCES__</script>
+<script>__QUIZ_FEEDBACK__</script>
+<script>__MILESTONES__</script>
+<script>__NATIVE_UPDATES__</script>
+<script>
+const data = (()=>{
+  const bundled=JSON.parse(document.getElementById('seed').textContent);
+  try{
+    if(globalThis.HebrewLearningNative){const active=JSON.parse(HebrewLearningNative.getVocabulary());if(active&&Array.isArray(active.words)&&Array.isArray(active.categories)&&active.words.length)return active;}
+  }catch(_){}
+  return bundled;
+})();
+const words = data.words;
+MilestoneRewards.configure(words.length);
+const categories = data.categories;
+const byId = id => words.find(w => w.id === id);
+const byCategory = id => words.filter(w => w.categoryId === id);
+const photo = w => '../content/' + w.imageAsset;
+const audioUrl = w => '../content/' + w.audioAsset + '?v=' + (w.audioSha256 || 'original');
+const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const quizLabel = () => AppPreferences.get().showPictures ? 'Match Hebrew to picture' : 'Match Hebrew to English';
+const topicInstructions = () => AppPreferences.get().showPictures ? 'Tap a word to see its picture and meaning.' : 'Tap a word to see its meaning.';
+const main = document.getElementById('main');
+const back = document.getElementById('back');
+let view = 'home', categoryId = '', wordIndex = 0, quizIndex = 0, answered = false;
+let attempts = 0, quizStars = 0, quizNewStars = 0, quizChoiceCount = 3;
+let starredWords = new Set();
+let done = new Set();
+try { done = new Set(JSON.parse(localStorage.getItem('hebrew-care-done') || '[]')); } catch (_) {}
+// Apply the user's requested fresh start once. Later reloads retain new rewards.
+const starResetVersion='2026-10-22-fresh-start-1';
+try {
+  if(localStorage.getItem('hebrew-learning-star-reset-version')!==starResetVersion){
+    localStorage.removeItem('hebrew-learning-stars-v1');
+    localStorage.removeItem('hebrew-learning-word-stars-v1');
+    localStorage.setItem('hebrew-learning-star-reset-version',starResetVersion);
+  }else{
+    const stored=JSON.parse(localStorage.getItem('hebrew-learning-word-stars-v1') || '[]');
+    if(Array.isArray(stored))starredWords=new Set(stored.filter(id=>byId(id)));
+  }
+} catch (_) {}
+// Every displayed total comes from the same word IDs used by the topic stars.
+function totalStars() { return starredWords.size; }
+function save() { try { localStorage.setItem('hebrew-care-done', JSON.stringify([...done])); localStorage.setItem('hebrew-learning-word-stars-v1', JSON.stringify([...starredWords])); } catch (_) {} }
+function starsMarkup(earned, count) { return `<span class="star-icons" role="img" aria-label="${earned} of ${count} stars">${Array.from({length:count},(_,i)=>`<svg viewBox="0 0 24 24" aria-hidden="true"${i<earned?'':' class="star-empty"'} fill="${i<earned?'currentColor':'none'}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="m12 2.5 2.9 5.88 6.49.94-4.7 4.58 1.11 6.47-5.8-3.06-5.8 3.06 1.11-6.47-4.7-4.58 6.49-.94Z"/></svg>`).join('')}</span>`; }
+function topicStars(id) { return byCategory(id).filter(w=>starredWords.has(w.id)).length; }
+function shuffled(items) { const result=[...items];for(let i=result.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result; }
+function resetTopicStars(id) {
+  if(!categories.some(c=>c.id===id))return;
+  for(const word of byCategory(id))starredWords.delete(word.id);
+  quizStars=0;quizNewStars=0;save();showCategory(id);
+}
+function quizRewards() { return `${starsMarkup(topicStars(categoryId),byCategory(categoryId).length)}<span>★ ${totalStars()} total</span>`; }
+function heading(eyebrow, title) { QuizFeedback.clear(); globalThis.NativeUpdates?.setBusy(view!=='home'); document.body.classList.toggle('home-screen',view==='home'); const label=document.getElementById('eyebrow'),name=document.getElementById('title'); label.textContent=eyebrow; name.textContent=title; label.hidden=view==='home'||!eyebrow; name.hidden=view==='home'; back.hidden=view==='home'; }
+function showHome() {
+  view='home'; heading('','');
+  const icons=['↗','🥤','🛁','🍽','🪑','🧹','🛒','🚌','🙂','✚'];
+  main.innerHTML=`<div class="progress"><strong>${done.size} of ${words.length}</strong> words practised on this device<div class="reward-total">★ ${totalStars()} stars earned</div>${MilestoneRewards.markup(totalStars())}</div>
+    <h1 class="topic-prompt">Choose a topic</h1>
+    <div class="grid">${categories.map((c,i)=>`<button class="topic" data-category="${escapeHtml(c.id)}"><span class="icon" aria-hidden="true">${escapeHtml(c.icon||icons[i]||'💬')}</span><strong>${escapeHtml(c.title)}</strong>${starsMarkup(topicStars(c.id),byCategory(c.id).length)}</button>`).join('')}</div>`;
+}
+function showCategory(id) {
+  categoryId=id; view='category'; const cat=categories.find(c=>c.id===id); heading(`${byCategory(id).length} words`,cat.title);
+  main.innerHTML=`<div class="topic-progress">${starsMarkup(topicStars(id),byCategory(id).length)}<button class="reset-stars" data-action="reset-stars">Reset Stars</button></div><p class="muted" data-topic-instructions>${topicInstructions()}</p><div class="word-list">${byCategory(id).map((w,i)=>`<div class="word-row"><button class="word-open" data-word="${i}"><img src="${photo(w)}" alt=""><span><strong lang="he" dir="rtl">${escapeHtml(w.hebrew)}</strong><span class="sound">${escapeHtml(w.pronunciation)}</span><small>${escapeHtml(w.english)}</small></span></button><button class="audio-choice" data-play-choice="${escapeHtml(w.id)}" aria-label="Hear ${escapeHtml(w.hebrew)}" title="${w.audioStatus==='user_verified'?'Hear Hebrew':'Audio awaiting review'}" ${w.audioStatus==='user_verified'&&w.audioAsset?'':'disabled'}>▶</button></div>`).join('')}</div>
+  <button class="primary" data-action="study">Start lesson</button><button class="secondary" data-action="quiz" data-quiz-label>${quizLabel()}</button>`;
+}
+function showWord(index) {
+  view='word'; wordIndex=index; const group=byCategory(categoryId), w=group[index]; heading(categories.find(c=>c.id===categoryId).title,'Learn the word');
+  const approved=w.audioStatus==='user_verified' && w.audioAsset;
+  main.innerHTML=`<div class="lesson-layout"><img class="hero" src="${photo(w)}" alt="${escapeHtml(w.english)}"><div class="lesson-content"><div class="counter">Word ${index+1} of ${group.length}</div>
+    <div class="hebrew" lang="he">${escapeHtml(w.hebrew)}</div><div class="pronunciation">${escapeHtml(w.pronunciation)}</div><div class="translation">${escapeHtml(w.english)}</div>
+    <button class="primary" data-action="play" ${approved?'':'disabled'}>▶ Hear in Hebrew</button>${approved?'':'<div class="notice">Hebrew audio is being checked. This button will work when the recording is approved.</div>'}
+    <div class="controls"><button class="secondary" data-action="prev" ${index===0?'disabled':''}>Previous</button><button class="secondary" data-action="next" ${index===group.length-1?'disabled':''}>Next</button></div>
+    <button class="secondary" data-action="quiz" data-quiz-label>${quizLabel()}</button></div></div>`;
+}
+function startQuiz() { quizStars=0; quizNewStars=0; showQuiz(0); }
+function showQuiz(index) {
+  view='quiz'; quizIndex=index; answered=false; attempts=0; const group=byCategory(categoryId), target=group[index]; heading(categories.find(c=>c.id===categoryId).title,'Choose the Hebrew word');
+  const choices=shuffled([target,...shuffled(group.filter(w=>w.id!==target.id)).slice(0,2)]);
+  quizChoiceCount=choices.length;
+  main.innerHTML=`<div class="quiz-rewards" id="quiz-rewards">${quizRewards()}</div><div class="lesson-layout"><img class="hero" src="${photo(target)}" alt="${escapeHtml(target.english)}"><div class="lesson-content"><p class="muted">Choose the matching Hebrew word. Get it right the first time to earn a star.</p><div class="quiz-meaning" lang="en" dir="ltr">${escapeHtml(target.english)}</div><div class="counter quiz-counter">Question ${index+1} of ${group.length}</div><div class="options">${choices.map(w=>`<div class="option"><button class="answer-select" data-answer="${escapeHtml(w.id)}"><span class="choice-hebrew" lang="he" dir="rtl">${escapeHtml(w.hebrew)}</span><span class="choice-sound">${escapeHtml(w.pronunciation)}</span></button><button class="audio-choice" data-play-choice="${escapeHtml(w.id)}" aria-label="Hear ${escapeHtml(w.hebrew)}" title="${w.audioStatus==='user_verified'?'Hear Hebrew':'Audio awaiting review'}" ${w.audioStatus==='user_verified'&&w.audioAsset?'':'disabled'}>▶</button></div>`).join('')}</div><div class="feedback" id="feedback" aria-live="polite"></div><button class="primary" id="continue" data-action="continue" hidden>${index===group.length-1?'Finish':'Next question'}</button></div></div>`;
+}
+function showQuizResult() {
+  view='quiz-result'; heading('Quiz complete','Well done!');
+  const count=byCategory(categoryId).length;
+  main.innerHTML=`<div class="quiz-result">${starsMarkup(topicStars(categoryId),count)}<h2>${quizNewStars?`You earned ${quizNewStars} ${quizNewStars===1?'star':'stars'}!`:'Quiz complete!'}</h2><p>${quizStars} of ${count} correct on the first try.</p><p class="reward-total">★ ${totalStars()} stars in total</p></div><button class="primary" data-action="quiz">Try again</button><button class="secondary" data-action="topic">Back to topic</button>`;
+}
+let currentAudio;
+function playWord(w) {
+  if(w?.audioStatus!=='user_verified'||!w.audioAsset)return;
+  QuizFeedback.clear(); if(currentAudio)currentAudio.pause();
+  const volume=AppPreferences.effectiveVolume(); if(volume<=0)return;
+  currentAudio=new Audio(audioUrl(w)); currentAudio.volume=volume;
+  currentAudio.play()?.catch(()=>{});
+}
+const settingsDialog=document.getElementById('settings-dialog');
+const soundControl=document.getElementById('setting-sound');
+const volumeControl=document.getElementById('setting-volume');
+const picturesControl=document.getElementById('setting-pictures');
+const layoutControl=document.getElementById('setting-layout');
+let appliedLayout=null;
+function applySettings(settings) {
+  soundControl.checked=settings.soundEnabled; volumeControl.value=Math.round(settings.volume*100);
+  volumeControl.disabled=!settings.soundEnabled;
+  document.getElementById('volume-value').textContent=`${Math.round(settings.volume*100)}%`;
+  picturesControl.checked=settings.showPictures;
+  layoutControl.value=settings.layout;
+  document.body.classList.toggle('without-pictures',!settings.showPictures);
+  document.body.classList.toggle('tablet-layout',settings.layout==='ktc-24');
+  if(appliedLayout!==settings.layout){
+    appliedLayout=settings.layout;
+    try{globalThis.AndroidLayout?.setLayout(settings.layout);}catch(_){}
+  }
+  document.querySelectorAll('[data-quiz-label]').forEach(el=>{el.textContent=quizLabel();});
+  document.querySelectorAll('[data-topic-instructions]').forEach(el=>{el.textContent=topicInstructions();});
+  QuizFeedback.clear();
+  if(currentAudio){currentAudio.volume=AppPreferences.effectiveVolume();if(currentAudio.volume===0)currentAudio.pause();}
+}
+function closeSettings() { settingsDialog.close();document.getElementById('reset-confirm').hidden=true;document.getElementById('settings-open').focus(); }
+document.getElementById('settings-open').addEventListener('click',()=>{if(currentAudio)currentAudio.pause();QuizFeedback.clear();document.getElementById('reset-confirm').hidden=true;settingsDialog.showModal();});
+document.getElementById('settings-close').addEventListener('click',closeSettings);
+settingsDialog.addEventListener('cancel',event=>{event.preventDefault();closeSettings();});
+soundControl.addEventListener('change',()=>AppPreferences.set({soundEnabled:soundControl.checked}));
+volumeControl.addEventListener('input',()=>AppPreferences.set({volume:Number(volumeControl.value)/100}));
+picturesControl.addEventListener('change',()=>AppPreferences.set({showPictures:picturesControl.checked}));
+layoutControl.addEventListener('change',()=>AppPreferences.set({layout:layoutControl.value}));
+document.getElementById('reset-game').addEventListener('click',()=>{document.getElementById('reset-confirm').hidden=false;document.getElementById('reset-cancel').focus();});
+document.getElementById('reset-cancel').addEventListener('click',()=>{document.getElementById('reset-confirm').hidden=true;document.getElementById('reset-game').focus();});
+function resetGame() {
+  if(currentAudio){currentAudio.pause();currentAudio=null;} QuizFeedback.clear();MilestoneRewards.dismiss();
+  starredWords.clear();done.clear();quizStars=0;quizNewStars=0;attempts=0;answered=false;quizIndex=0;wordIndex=0;categoryId='';
+  save();AppPreferences.reset();closeSettings();showHome();
+}
+document.getElementById('reset-confirm-button').addEventListener('click',resetGame);
+AppPreferences.subscribe(applySettings);
+main.addEventListener('click', event => {
+  const button=event.target.closest('button'); if(!button) return;
+  if(button.dataset.category) return showCategory(button.dataset.category);
+  if(button.dataset.word!==undefined) return showWord(Number(button.dataset.word));
+  if(button.dataset.playChoice){playWord(byId(button.dataset.playChoice));return;}
+  if(button.dataset.answer && view==='quiz') {
+    if(answered || button.disabled)return;
+    const group=byCategory(categoryId), target=group[quizIndex], correct=button.dataset.answer===target.id;
+    const firstTry=attempts===0; attempts++;
+    const starsBefore=totalStars();
+    if(correct){
+      answered=true;done.add(target.id);
+      const earnedStar=firstTry && !starredWords.has(target.id);
+      if(firstTry)quizStars++;
+      if(earnedStar){starredWords.add(target.id);quizNewStars++;}
+      save();
+      document.querySelectorAll('.answer-select').forEach(el=>{el.disabled=true;});
+      button.closest('.option').classList.add('correct');
+      document.getElementById('quiz-rewards').innerHTML=quizRewards();
+      document.getElementById('feedback').textContent=(earnedStar?'Correct! +1 star. ':'Correct! ')+target.hebrew+' · '+target.pronunciation;
+      document.getElementById('continue').hidden=false;
+    }else{
+      button.disabled=true;
+      button.closest('.option').classList.add('wrong','eliminated');
+      const remaining=quizChoiceCount-attempts;
+      document.getElementById('feedback').textContent=remaining===1?'Try again. Choose the remaining answer.':`Try again. Choose from the ${remaining} remaining answers.`;
+    }
+    if(currentAudio)currentAudio.pause();
+    if(!MilestoneRewards.check(starsBefore,totalStars(),document.getElementById('continue')))QuizFeedback.show(correct, button.closest('.option'));
+    return;
+  }
+  switch(button.dataset.action){
+    case 'study':showWord(0);break;
+    case 'quiz':startQuiz();break;
+    case 'topic':showCategory(categoryId);break;
+    case 'reset-stars':if(view==='category')resetTopicStars(categoryId);break;
+    case 'prev':showWord(wordIndex-1);break;
+    case 'next':showWord(wordIndex+1);break;
+    case 'continue':if(view==='quiz'&&answered){quizIndex<byCategory(categoryId).length-1?showQuiz(quizIndex+1):showQuizResult();}break;
+    case 'play':playWord(byCategory(categoryId)[wordIndex]);break;
+  }
+});
+back.addEventListener('click',()=>{if(view==='category') showHome(); else showCategory(categoryId);});
+globalThis.addEventListener('hebrew:pause',()=>{QuizFeedback.clear();if(currentAudio)currentAudio.pause();});
+showHome();
+applySettings(AppPreferences.get());
+</script>
+</body>
+</html>

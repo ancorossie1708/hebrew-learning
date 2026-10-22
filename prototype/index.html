@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#153b4a">
+  <title>Hebrew Learning — screen prototype</title>
+  <style>
+    :root { color-scheme: light; --ink:#17343c; --muted:#5a7078; --sea:#0b7e83; --soft:#e9f5f3; --paper:#fff; --line:#d9e5e5; }
+    * { box-sizing:border-box; }
+    [hidden] { display:none !important; }
+    body { margin:0; background:#f3f7f6; color:var(--ink); font:17px/1.45 system-ui,Arial,sans-serif; }
+    button { font:inherit; cursor:pointer; }
+    .shell { max-width:470px; min-height:100vh; margin:auto; background:var(--paper); box-shadow:0 0 35px #153b4a12; }
+    header { background:#153b4a; color:white; padding:18px 20px 20px; }
+    .top { display:flex; align-items:center; justify-content:space-between; gap:12px; container-type:inline-size; }
+    .brand { font-weight:800; letter-spacing:.02em; font-size:clamp(16px,5vw,20px); }
+    body.home-screen .brand { font-size:clamp(22px,7.5vw,37px); font-size:clamp(22px,8.6cqw,37px); line-height:1.1; white-space:nowrap; }
+    .header-controls { display:flex; align-items:center; gap:8px; }
+    .settings-open { color:white; background:transparent; border:1px solid #ffffff77; border-radius:10px; width:44px; height:44px; font-size:27px; line-height:1; }
+    .settings-open { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .settings-open svg { width:30px; height:30px; }
+    body.tablet-layout .settings-open svg { width:38px; height:38px; }
+    .topic-prompt { text-align:center; font-size:32px; margin:22px 0 20px; }
+    .back { border:1px solid #ffffff77; color:white; background:transparent; border-radius:10px; padding:6px 12px; }
+    .eyebrow { color:#b8dcda; font-size:13px; margin:14px 0 3px; text-transform:uppercase; letter-spacing:.1em; }
+    h1 { font-size:28px; line-height:1.15; margin:0; }
+    main { padding:20px; padding-bottom:44px; }
+    p { margin:0 0 16px; }
+    .muted { color:var(--muted); }
+    .notice { background:#fff6e8; border:1px solid #f0d8aa; border-radius:12px; padding:12px 14px; font-size:14px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .topic, .word-row { width:100%; text-align:left; border:1px solid var(--line); border-radius:16px; background:#fff; padding:15px; }
+    .topic:hover,.word-row:hover { border-color:var(--sea); background:#f7fcfb; }
+    .topic .star-icons { display:grid; width:max-content; margin-top:10px; font-size:clamp(16px,4.7vw,22px); gap:4px; }
+    .topic-progress { display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+    .reset-stars { padding:7px 11px; border:1px solid var(--line); border-radius:10px; background:white; color:var(--muted); font-size:14px; }
+    .reset-stars:hover { border-color:var(--sea); color:var(--sea); }
+    .topic .icon { font-size:27px; display:block; margin-bottom:7px; }
+    .word-list { display:grid; gap:10px; }
+    .word-row { display:flex; align-items:center; gap:8px; padding:8px; }
+    .word-open { display:flex; align-items:center; gap:12px; flex:1; min-width:0; padding:0; border:0; background:transparent; text-align:left; color:var(--ink); }
+    .word-row img { width:62px; height:62px; object-fit:cover; border-radius:11px; }
+    .word-row strong { display:block; font-size:19px; }
+    .word-row small { display:block; color:var(--muted); }
+    .word-row .sound { display:block; color:var(--sea); font-weight:700; font-size:15px; }
+    .hero { width:100%; aspect-ratio:1/1; max-height:350px; object-fit:cover; border-radius:20px; background:#e8eeee; }
+    .counter { margin:12px 0 4px; color:var(--muted); font-size:14px; }
+    .quiz-meaning { text-align:center; font-size:36px; font-weight:750; line-height:1.2; margin:14px 0 8px; }
+    .quiz-counter { text-align:center; margin:0 0 14px; }
+    .hebrew { direction:rtl; text-align:center; font-size:47px; font-weight:750; line-height:1.25; margin:13px 0 4px; }
+    .pronunciation { text-align:center; color:var(--sea); font-size:22px; font-weight:700; }
+    .translation { text-align:center; font-size:20px; margin:3px 0 19px; }
+    .primary, .secondary { display:block; width:100%; border-radius:14px; padding:13px 15px; font-weight:750; margin:12px 0; }
+    .primary { border:1px solid var(--sea); background:var(--sea); color:#fff; }
+    .secondary { border:1px solid var(--sea); background:#fff; color:var(--sea); }
+    .primary:disabled,.secondary:disabled { opacity:.48; cursor:default; }
+    .controls { display:flex; gap:10px; }
+    .controls button { flex:1; }
+    .options { display:grid; gap:10px; }
+    .option { display:flex; align-items:stretch; gap:8px; width:100%; padding:8px; border:1px solid var(--line); border-radius:13px; background:white; }
+    .answer-select { flex:1; min-width:0; padding:5px 8px; border:0; background:transparent; text-align:left; color:var(--ink); }
+    .answer-select .choice-hebrew { display:block; direction:rtl; text-align:left; font-size:25px; font-weight:700; }
+    .answer-select .choice-sound { display:block; color:var(--sea); font-size:16px; font-weight:700; }
+    .answer-select:disabled { cursor:default; }
+    .audio-choice { flex:0 0 48px; min-height:48px; border:1px solid var(--sea); border-radius:10px; background:var(--soft); color:var(--sea); font-size:20px; }
+    .audio-choice:disabled { opacity:.4; cursor:default; }
+    .option.correct { background:#e3f5e8; border-color:#3f9e66; }
+    .option.wrong { background:#fff0ec; border-color:#d6836d; }
+    .option.eliminated .answer-select { opacity:.5; }
+    .quiz-rewards { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 14px; color:var(--muted); font-size:14px; }
+    .star-icons { display:inline-grid; grid-template-columns:repeat(5,1em); align-items:center; gap:5px; color:#c4860f; font-size:25px; vertical-align:middle; }
+    .star-icons svg { display:block; width:1em; height:1em; flex-shrink:0; }
+    .star-empty { color:#a9b5b8; }
+    .reward-total { margin-top:8px; color:#805a11; font-weight:700; }
+    .quiz-result { text-align:center; padding:30px 0 15px; }
+    .quiz-result .star-icons { font-size:47px; gap:8px; }
+    .quiz-result h2 { font-size:25px; margin:18px 0 8px; }
+    .option.quiz-shake { animation:answer-shake 380ms ease-in-out; }
+    .quiz-celebration { position:fixed; inset:0; z-index:20; pointer-events:none; overflow:hidden; }
+    .quiz-spark { position:absolute; width:5px; height:5px; border-radius:50%; background:var(--spark-color); opacity:0; animation:answer-spark 650ms ease-out forwards; animation-delay:var(--delay); }
+    @keyframes answer-shake {
+      0%,100% { transform:translateX(0); }
+      20%,60% { transform:translateX(-5px); }
+      40%,80% { transform:translateX(5px); }
+    }
+    @keyframes answer-spark {
+      0% { opacity:0; transform:translate(0,0) scale(.4); }
+      15% { opacity:.85; }
+      70% { opacity:.65; }
+      100% { opacity:0; transform:translate(var(--dx),var(--dy)) scale(.65); }
+    }
+    @media(prefers-reduced-motion:reduce) {
+      .option.quiz-shake,.quiz-spark { animation:none; }
+      .quiz-celebration { display:none; }
+    }
+    .feedback { min-height:25px; font-weight:700; margin:12px 0; }
+    .progress { background:var(--soft); padding:13px 15px; border-radius:13px; margin-bottom:18px; }
+    .progress strong { color:var(--sea); }
+    .milestone-track { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:15px; }
+    .milestone-badge { display:flex; flex-direction:column; align-items:center; gap:3px; border:1px solid #c7d8d7; border-radius:12px; padding:7px 2px; font-size:13px; }
+    .milestone-badge>span { font-size:23px; }
+    .milestone-badge.locked { opacity:.45; filter:grayscale(1); }
+    .milestone-badge.unlocked { background:#fff8db; border-color:#dcb756; }
+    .milestone-badge.special.unlocked { background:#f2eaff; border-color:#a790cf; }
+    .milestone-badge.grand.unlocked { background:#ffe9b2; border:2px solid #bc8619; }
+    .milestone-dialog { box-sizing:border-box; width:calc(100% - 40px); max-width:380px; padding:28px 24px 18px; border:2px solid #dfbf65; border-radius:24px; color:var(--ink); background:#fffdf6; text-align:center; overflow:visible; box-shadow:0 15px 60px #102f3c55; }
+    .milestone-dialog::backdrop { background:#102f3c99; }
+    .milestone-dialog h2 { font-size:30px; margin:8px 0; }
+    .milestone-dialog #milestone-count { font-size:24px; color:#94630e; font-weight:800; margin-bottom:12px; }
+    .milestone-dialog.special { border-color:#ad8cdd; background:linear-gradient(145deg,#fff,#f1e9ff); }
+    .milestone-dialog.grand { border:3px solid #d5a32c; background:linear-gradient(145deg,#fff9db,#fff,#ffe5ac); }
+    .milestone-dialog .milestone-medal { font-size:76px; line-height:1.2; animation:milestone-pop 650ms ease-out; }
+    .milestone-dialog.special .milestone-medal { font-size:90px; }
+    .milestone-dialog.grand .milestone-medal { font-size:110px; animation:milestone-pop 900ms ease-out; }
+    .milestone-dialog .quiz-celebration { z-index:1; }
+    @keyframes milestone-pop { 0%{transform:scale(.5) rotate(-12deg);opacity:0} 65%{transform:scale(1.1) rotate(5deg);opacity:1} 100%{transform:scale(1) rotate(0)} }
+    @media(prefers-reduced-motion:reduce) { .milestone-dialog .milestone-medal { animation:none; } }
+    body.without-pictures .hero,body.without-pictures .word-row img { display:none; }
+    .settings-dialog { width:calc(100% - 32px); max-width:410px; max-height:calc(100dvh - 48px); padding:24px; border:1px solid var(--line); border-radius:22px; background:var(--paper); color:var(--ink); box-shadow:0 15px 60px #102f3c55; }
+    .settings-dialog::backdrop { background:#102f3c99; }
+    .settings-dialog h2 { margin:0; font-size:27px; }
+    .settings-dialog .settings-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .settings-close { border:1px solid var(--line); border-radius:10px; min-height:44px; padding:6px 12px; background:white; color:var(--ink); }
+    .setting-row { display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:56px; border-top:1px solid var(--line); padding:12px 0; }
+    .setting-row input[type=checkbox] { width:24px; height:24px; accent-color:var(--sea); flex-shrink:0; }
+    .volume-label { display:flex; justify-content:space-between; padding:8px 0; }
+    .settings-dialog input[type=range] { width:100%; height:36px; accent-color:var(--sea); margin:0 0 12px; }
+    .reset-game { border-color:#c38d7e; color:#923f2d; margin-top:22px; }
+    .reset-confirm { padding:14px; background:#fff2ec; border:1px solid #e5baa9; border-radius:12px; }
+    .reset-confirm p { margin-bottom:10px; }
+    .settings-dialog select { width:100%; min-height:48px; padding:9px; border:1px solid var(--line); border-radius:10px; background:white; color:var(--ink); font:inherit; margin:4px 0 16px; }
+    .layout-label { display:block; border-top:1px solid var(--line); padding-top:16px; }
+    body.tablet-layout .shell { width:100%; max-width:1920px; }
+    body.tablet-layout header { padding:22px 32px; }
+    body.tablet-layout main { padding:28px 32px 36px; }
+    body.tablet-layout.home-screen .brand { font-size:clamp(26px,4.5vw,64px); }
+    body.tablet-layout .header-controls button { min-height:56px; min-width:56px; font-size:24px; }
+    body.tablet-layout .settings-open { font-size:36px; }
+    body.tablet-layout .primary,body.tablet-layout .secondary { min-height:64px; font-size:24px; }
+    @media(min-width:900px) {
+      body.tablet-layout { font-size:22px; }
+      body.tablet-layout.home-screen main { display:grid; grid-template-columns:300px minmax(0,1fr); gap:20px 28px; align-items:start; }
+      body.tablet-layout.home-screen .progress { grid-column:1; grid-row:1 / span 2; margin:0; }
+      body.tablet-layout.home-screen .topic-prompt { grid-column:2; margin:0; font-size:38px; }
+      body.tablet-layout.home-screen .grid { grid-column:2; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+      body.tablet-layout .topic { padding:20px; min-height:150px; }
+      body.tablet-layout .topic .star-icons { font-size:25px; }
+      body.tablet-layout .word-list { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+      body.tablet-layout .word-row { min-height:104px; padding:12px; }
+      body.tablet-layout .word-row img { width:80px; height:80px; }
+      body.tablet-layout .word-row strong { font-size:28px; }
+      body.tablet-layout .word-row .sound { font-size:21px; }
+      body.tablet-layout .audio-choice { flex-basis:64px; min-height:64px; font-size:28px; }
+      body.tablet-layout .lesson-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:36px; align-items:center; }
+      body.tablet-layout .hero { max-height:calc(100vh - 200px); }
+      body.tablet-layout .hebrew { font-size:70px; }
+      body.tablet-layout .pronunciation { font-size:30px; }
+      body.tablet-layout .translation { font-size:30px; }
+      body.tablet-layout .quiz-meaning { font-size:46px; }
+      body.tablet-layout .option { min-height:90px; }
+      body.tablet-layout .answer-select .choice-hebrew { font-size:34px; }
+      body.tablet-layout .answer-select .choice-sound { font-size:24px; }
+      body.tablet-layout.without-pictures .lesson-layout { display:block; max-width:900px; margin:auto; }
+    }
+    @media(min-width:1400px) {
+      body.tablet-layout.home-screen main { grid-template-columns:360px minmax(0,1fr); gap:24px 32px; }
+      body.tablet-layout.home-screen .grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:20px; }
+      body.tablet-layout .topic { font-size:25px; min-height:180px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <header><div class="top"><span class="brand">HEBREW LEARNING</span><div class="header-controls"><button class="back" id="back" hidden>Back</button><button class="settings-open" id="settings-open" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><polygon points="9.37,3.92 9.90,1.20 14.10,1.20 14.63,3.92 15.86,4.43 18.15,2.88 21.12,5.85 19.57,8.14 20.08,9.37 22.80,9.90 22.80,14.10 20.08,14.63 19.57,15.86 21.12,18.15 18.15,21.12 15.86,19.57 14.63,20.08 14.10,22.80 9.90,22.80 9.37,20.08 8.14,19.57 5.85,21.12 2.88,18.15 4.43,15.86 3.92,14.63 1.20,14.10 1.20,9.90 3.92,9.37 4.43,8.14 2.88,5.85 5.85,2.88 8.14,4.43" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></div></div><div class="eyebrow" id="eyebrow" hidden></div><h1 id="title" hidden></h1></header>
+  <main id="main"></main>
+</div>
+<dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
+  <div class="settings-top"><h2 id="settings-title">Settings</h2><button class="settings-close" id="settings-close">Close</button></div>
+  <label class="setting-row" for="setting-sound"><span>Sound</span><input id="setting-sound" type="checkbox" checked></label>
+  <label class="volume-label" for="setting-volume"><span>Volume</span><output id="volume-value" for="setting-volume">100%</output></label>
+  <input id="setting-volume" type="range" min="0" max="100" step="1" value="100">
+  <label class="setting-row" for="setting-pictures"><span>Show pictures</span><input id="setting-pictures" type="checkbox" checked></label>
+  <label class="layout-label" for="setting-layout">Screen layout</label><select id="setting-layout"><option value="phone">Phone — portrait</option><option value="ktc-24">KTC 24.5″ — 1920×1080 (16:9)</option></select>
+  <div id="native-updates" hidden><p id="app-version" class="muted"></p><button class="secondary" id="check-updates">Check for updates</button><p class="muted" id="native-update-status" role="status"></p></div>
+  <button class="secondary reset-game" id="reset-game">Reset game</button>
+  <div class="reset-confirm" id="reset-confirm" hidden><p>Reset all stars, rewards, practised words and settings?</p><div class="controls"><button class="secondary" id="reset-cancel">Cancel</button><button class="primary" id="reset-confirm-button">Reset game</button></div></div>
+</dialog>
+<script id="seed" type="application/json">{"categories":[{"id":"mobility","title":"Getting around"},{"id":"food","title":"Eating and drinking"},{"id":"bathing","title":"Bathing"},{"id":"kitchen","title":"Kitchen"},{"id":"living_room","title":"Living room"},{"id":"cleaning","title":"Cleaning"},{"id":"shopping","title":"Shopping"},{"id":"outside","title":"Outside"},{"id":"feelings","title":"Feelings"},{"id":"safety","title":"Safety"},{"id":"conversation","title":"Everyday phrases","hebrewTitle":"רצונות ושיחה","icon":"💬"},{"id":"fun","title":"Fun","hebrewTitle":"כיף","icon":"🎵"}],"words":[{"id":"mobility_get_up","categoryId":"mobility","hebrew":"לקום","english":"to get up","pronunciation":"la-KOOM","imageAsset":"assets/photos/mobility_get_up.webp","audioAsset":"assets/audio/mobility_get_up.wav","audioStatus":"user_verified","audioSha256":"08493eba87b2f95d69da48901a07fdd51d6ed075245adc9bb8302ead694c21c5"},{"id":"mobility_sit","categoryId":"mobility","hebrew":"לשבת","english":"to sit","pronunciation":"la-SHE-vet","imageAsset":"assets/photos/mobility_sit.webp","audioAsset":"assets/audio/mobility_sit.wav","audioStatus":"user_verified","audioSha256":"d4805e69b5f50ace59b538b164987a2974d01e085cb0e79bd52a79fc00fba74f"},{"id":"mobility_walk","categoryId":"mobility","hebrew":"ללכת","english":"to walk","pronunciation":"la-LE-khet","imageAsset":"assets/photos/mobility_walk.webp","audioAsset":"assets/audio/mobility_walk.wav","audioStatus":"user_verified","audioSha256":"b22946290710eb502aed174be68c759c26de4b474aae41e1b1715d4cb65c0622"},{"id":"mobility_stand","categoryId":"mobility","hebrew":"לעמוד","english":"to stand","pronunciation":"la-a-MOD","imageAsset":"assets/photos/mobility_stand.webp","audioAsset":"assets/audio/mobility_stand.wav","audioStatus":"user_verified","audioSha256":"c2866b3340787e0f3d3774d702c908ca0b2e0471390b10f73913c87e7786e64c"},{"id":"mobility_lie_down","categoryId":"mobility","hebrew":"לשכב","english":"to lie down","pronunciation":"lish-KAV","imageAsset":"assets/photos/mobility_lie_down.webp","audioAsset":"assets/audio/mobility_lie_down.wav","audioStatus":"user_verified","audioSha256":"2d7bd786c7a14627d75044781da8e657f7b152e26ed7a9cf6e179e17532eb2f3"},{"id":"mobility_turn","categoryId":"mobility","hebrew":"להסתובב","english":"to turn around","pronunciation":"le-his-to-VEV","imageAsset":"assets/photos/mobility_turn.webp","audioAsset":"assets/audio/mobility_turn.wav","audioStatus":"user_verified","audioSha256":"5663a259b3787337290db5282a433c7c1806617ba30d47612a8186ed9adadb0a"},{"id":"mobility_go_up","categoryId":"mobility","hebrew":"לעלות","english":"to go up","pronunciation":"la-a-LOT","imageAsset":"assets/photos/mobility_go_up.webp","audioAsset":"assets/audio/mobility_go_up.wav","audioStatus":"user_verified","audioSha256":"e9e96f2f12f9fb6c37fae6f2d786ab59c14c6d7e62252b0848c00663952a5059"},{"id":"mobility_go_down","categoryId":"mobility","hebrew":"לרדת","english":"to go down","pronunciation":"la-RE-det","imageAsset":"assets/photos/mobility_go_down.webp","audioAsset":"assets/audio/mobility_go_down.wav","audioStatus":"user_verified","audioSha256":"ab1f399e2cabe12ec3765f3d1d0693800ea10d3da84ae3590cef58210f458c49"},{"id":"mobility_bed","categoryId":"mobility","hebrew":"מיטה","english":"bed","pronunciation":"mi-TA","imageAsset":"assets/photos/mobility_bed.webp","audioAsset":"assets/audio/mobility_bed.wav","audioStatus":"user_verified","audioSha256":"f66f8030a8f488249d1647fa691d1cb9d25647db9b965711559db8b49889f730"},{"id":"mobility_walker","categoryId":"mobility","hebrew":"הליכון","english":"walking frame","pronunciation":"ha-li-KHON","imageAsset":"assets/photos/mobility_walker.webp","audioAsset":"assets/audio/mobility_walker.wav","audioStatus":"user_verified","audioSha256":"f95f1f07d506491987210146f27f3153d1c6cdf8d1409bbabc1758b843905da0"},{"id":"food_eat","categoryId":"food","hebrew":"לאכול","english":"to eat","pronunciation":"le-e-KHOL","imageAsset":"assets/photos/food_eat.webp","audioAsset":"assets/audio/food_eat.wav","audioStatus":"user_verified","audioSha256":"8397cab4029f5f869f5378145249387fa5d3af3e7d34a53b3a1f011ef3549789"},{"id":"food_drink","categoryId":"food","hebrew":"לשתות","english":"to drink","pronunciation":"lish-TOT","imageAsset":"assets/photos/food_drink.webp","audioAsset":"assets/audio/food_drink.wav","audioStatus":"user_verified","audioSha256":"a1bb139e2fe57053fa189e4555291d26bbb9f2b68729a62589fea7bced32d1d0"},{"id":"food_water","categoryId":"food","hebrew":"מים","english":"water","pronunciation":"MA-yim","imageAsset":"assets/photos/food_water.webp","audioAsset":"assets/audio/food_water.wav","audioStatus":"user_verified","audioSha256":"04c0db1e1ca27d0b25fe91689ecc7727d85f97bfc785f5b73538c50a79892b16"},{"id":"food_bread","categoryId":"food","hebrew":"לחם","english":"bread","pronunciation":"LE-khem","imageAsset":"assets/photos/food_bread.webp","audioAsset":"assets/audio/food_bread.wav","audioStatus":"user_verified","audioSha256":"db13901e70aed9ca9d8578c53f3c20b6ba52c9583d7b2e27ea1df4228ce7e4f8"},{"id":"food_milk","categoryId":"food","hebrew":"חלב","english":"milk","pronunciation":"kha-LAV","imageAsset":"assets/photos/food_milk.webp","audioAsset":"assets/audio/food_milk.wav","audioStatus":"user_verified","audioSha256":"8f3a0d11d62a052b78ea79c3a412ed0421f9dc0df5685a30673d16f22bd08d5b"},{"id":"food_rice","categoryId":"food","hebrew":"אורז","english":"rice","pronunciation":"O-rez","imageAsset":"assets/photos/food_rice.webp","audioAsset":"assets/audio/food_rice.wav","audioStatus":"user_verified","audioSha256":"30106a2dc81f1d472a2dbd4d8ce547dbffa45d22eae4e5745eeec67753b6846c"},{"id":"food_soup","categoryId":"food","hebrew":"מרק","english":"soup","pronunciation":"ma-RAK","imageAsset":"assets/photos/food_soup.webp","audioAsset":"assets/audio/food_soup.wav","audioStatus":"user_verified","audioSha256":"b29a2d7c15182babbdf0c43bd1303f91ca0ebb45014d07f44a6a8311d2d53c0a"},{"id":"food_egg","categoryId":"food","hebrew":"ביצה","english":"egg","pronunciation":"bey-TSA","imageAsset":"assets/photos/food_egg.webp","audioAsset":"assets/audio/food_egg.wav","audioStatus":"user_verified","audioSha256":"ad7af88637703412dd624facd11f6aabb87820d2e1fd02abe2322c8dde25ac3c"},{"id":"food_apple","categoryId":"food","hebrew":"תפוח","english":"apple","pronunciation":"ta-PU-akh","imageAsset":"assets/photos/food_apple.webp","audioAsset":"assets/audio/food_apple.wav","audioStatus":"user_verified","audioSha256":"9cdbd593dcc2a8203f6be10c115090b1046e32a0a9cea4bd0e9a2d9be6867d95"},{"id":"food_banana","categoryId":"food","hebrew":"בננה","english":"banana","pronunciation":"ba-NA-na","imageAsset":"assets/photos/food_banana.webp","audioAsset":"assets/audio/food_banana.wav","audioStatus":"user_verified","audioSha256":"b35cf51ccb8a1b3e3a22f763e36138a0c6a191cbe50fd4d9d9e7768d7b183a72"},{"id":"bathing_shower","categoryId":"bathing","hebrew":"להתקלח","english":"to shower","pronunciation":"le-hit-ka-LE-akh","imageAsset":"assets/photos/bathing_shower.webp","audioAsset":"assets/audio/bathing_shower.wav","audioStatus":"user_verified","audioSha256":"3a20d1a70ce031ee3ea4b1a5fb482095b7046b5d2b8b9aba3579a7c95f2474ae"},{"id":"bathing_soap","categoryId":"bathing","hebrew":"סבון","english":"soap","pronunciation":"sa-BON","imageAsset":"assets/photos/bathing_soap.webp","audioAsset":"assets/audio/bathing_soap.wav","audioStatus":"user_verified","audioSha256":"19e3e368c91ead8d6463d8f92bd32a36ed680a8f2687fe26f9bd13752dcefc1d"},{"id":"bathing_towel","categoryId":"bathing","hebrew":"מגבת","english":"towel","pronunciation":"ma-GE-vet","imageAsset":"assets/photos/bathing_towel.webp","audioAsset":"assets/audio/bathing_towel.wav","audioStatus":"user_verified","audioSha256":"89223cbaf26da96ff516a59ab04550df81331f6ecfa65ea3f1ccaa831300fa19"},{"id":"bathing_shampoo","categoryId":"bathing","hebrew":"שמפו","english":"shampoo","pronunciation":"sham-POO","imageAsset":"assets/photos/bathing_shampoo.webp","audioAsset":"assets/audio/bathing_shampoo.wav","audioStatus":"user_verified","audioSha256":"77daaf8821af9eca490ed8349a160d05c3f522c7b3a041550813aa0ff87b8247"},{"id":"bathing_toothbrush","categoryId":"bathing","hebrew":"מברשת שיניים","english":"toothbrush","pronunciation":"miv-RE-shet shi-NA-yim","imageAsset":"assets/photos/bathing_toothbrush.webp","audioAsset":"assets/audio/bathing_toothbrush.wav","audioStatus":"user_verified","audioSha256":"f3fe8117c00809b7e93be96c6a575ef69a02fc50f8ef55416d928bf6a75f728b"},{"id":"bathing_toothpaste","categoryId":"bathing","hebrew":"משחת שיניים","english":"toothpaste","pronunciation":"mish-KHAT shi-NA-yim","imageAsset":"assets/photos/bathing_toothpaste.webp","audioAsset":"assets/audio/bathing_toothpaste.wav","audioStatus":"user_verified","audioSha256":"9020e9bc2830ba1503dec7b7e91411c7d7265e7f5a94eb24fb8ae3bbaaef35a4"},{"id":"bathing_toilet","categoryId":"bathing","hebrew":"אסלה","english":"toilet","pronunciation":"as-LA","imageAsset":"assets/photos/bathing_toilet.webp","audioAsset":"assets/audio/bathing_toilet.wav","audioStatus":"user_verified","audioSha256":"7c108ea6b517be9287fcb6c34534573618c253ca7aa0c163e36fee52498669a1"},{"id":"bathing_sink","categoryId":"bathing","hebrew":"כיור","english":"sink","pronunciation":"ki-YOR","imageAsset":"assets/photos/bathing_sink.webp","audioAsset":"assets/audio/bathing_sink.wav","audioStatus":"user_verified","audioSha256":"644eea953588bd9331e7b145054eb522e246b3dfc364f45dfcbc0511974b4dee"},{"id":"bathing_comb","categoryId":"bathing","hebrew":"מסרק","english":"comb","pronunciation":"mas-REK","imageAsset":"assets/photos/bathing_comb.webp","audioAsset":"assets/audio/bathing_comb.wav","audioStatus":"user_verified","audioSha256":"3fee6fb9bf4933590cd7cb6251f22f25542e07617ca8af510846e08b14b5956f"},{"id":"bathing_dry_off","categoryId":"bathing","hebrew":"להתנגב","english":"to dry off","pronunciation":"le-hit-na-GEV","imageAsset":"assets/photos/bathing_dry_off.webp","audioAsset":"assets/audio/bathing_dry_off.wav","audioStatus":"user_verified","audioSha256":"a2358a104180c551de62cf372cca70c420ad67a100a29a46a0cb165fc7af357c"},{"id":"kitchen_plate","categoryId":"kitchen","hebrew":"צלחת","english":"plate","pronunciation":"tsa-LA-khat","imageAsset":"assets/photos/kitchen_plate.webp","audioAsset":"assets/audio/kitchen_plate.wav","audioStatus":"user_verified","audioSha256":"b5bc2a33a940531b37ea01ead97a38bd92b4b385129327d8188edd4cbd305aa9"},{"id":"kitchen_cup","categoryId":"kitchen","hebrew":"כוס","english":"cup","pronunciation":"KOS","imageAsset":"assets/photos/kitchen_cup.webp","audioAsset":"assets/audio/kitchen_cup.wav","audioStatus":"user_verified","audioSha256":"f18a3519f0f510b096c26fced9aa27f7a4f3150f0ccb223de59ec7d0c956de07"},{"id":"kitchen_teaspoon","categoryId":"kitchen","hebrew":"כפית","english":"teaspoon","pronunciation":"ka-PIT","imageAsset":"assets/photos/kitchen_teaspoon.webp","audioAsset":"assets/audio/kitchen_teaspoon.wav","audioStatus":"user_verified","audioSha256":"3386531fa0533765fe1d6aedaf784d4824e3f21476c9b4c547b5f0e070b58e65"},{"id":"kitchen_fork","categoryId":"kitchen","hebrew":"מזלג","english":"fork","pronunciation":"maz-LEG","imageAsset":"assets/photos/kitchen_fork.webp","audioAsset":"assets/audio/kitchen_fork.wav","audioStatus":"user_verified","audioSha256":"7d18a7a09379ad15aeeed3cfad3cde8f1770760235d9f3573cc67e19bb78f045"},{"id":"kitchen_knife","categoryId":"kitchen","hebrew":"סכין","english":"knife","pronunciation":"sa-KEEN","imageAsset":"assets/photos/kitchen_knife.webp","audioAsset":"assets/audio/kitchen_knife.wav","audioStatus":"user_verified","audioSha256":"0f84033e3eac375c74a1ab91e4f2ff3e276a06ab5d22acbba425b189ae666dec"},{"id":"kitchen_spoon","categoryId":"kitchen","hebrew":"כף","english":"spoon","pronunciation":"KAF","imageAsset":"assets/photos/kitchen_spoon.webp","audioAsset":"assets/audio/kitchen_spoon.wav","audioStatus":"user_verified","audioSha256":"40a9af80aa6bbf3c19ab9ba5c03821a9270fd448891066ffaac5a7c305999e16"},{"id":"kitchen_pot","categoryId":"kitchen","hebrew":"סיר","english":"cooking pot","pronunciation":"SEER","imageAsset":"assets/photos/kitchen_pot.webp","audioAsset":"assets/audio/kitchen_pot.wav","audioStatus":"user_verified","audioSha256":"34e10a5bc9af2c338960d4ff328675cc18a4257cd3147c1913664ad53028be3b"},{"id":"kitchen_pan","categoryId":"kitchen","hebrew":"מחבת","english":"frying pan","pronunciation":"ma-kha-VAT","imageAsset":"assets/photos/kitchen_pan.webp","audioAsset":"assets/audio/kitchen_pan.wav","audioStatus":"user_verified","audioSha256":"ee4f11dd10d1e71b00be8817c36f9d20d2be1792ee2affdf9a856426e9381b31"},{"id":"kitchen_fridge","categoryId":"kitchen","hebrew":"מקרר","english":"refrigerator","pronunciation":"me-ka-RER","imageAsset":"assets/photos/kitchen_fridge.webp","audioAsset":"assets/audio/kitchen_fridge.wav","audioStatus":"user_verified","audioSha256":"efed71835167acea270fa53c946360a30edc8a0b177318e63d6b67b3f86a0bce"},{"id":"kitchen_kettle","categoryId":"kitchen","hebrew":"קומקום","english":"kettle","pronunciation":"koom-KOOM","imageAsset":"assets/photos/kitchen_kettle.webp","audioAsset":"assets/audio/kitchen_kettle.wav","audioStatus":"user_verified","audioSha256":"878b9439c187bcd619c080aaf4e3412f50316912438bd0aeee22339d588b8940"},{"id":"living_room_chair","categoryId":"living_room","hebrew":"כיסא","english":"chair","pronunciation":"ki-SE","imageAsset":"assets/photos/living_room_chair.webp","audioAsset":"assets/audio/living_room_chair.wav","audioStatus":"user_verified","audioSha256":"062944f20b01a6de0c5cf37b6bfbc8844c433f1534a04ad9f3610ec03d26c10b"},{"id":"living_room_table","categoryId":"living_room","hebrew":"שולחן","english":"table","pronunciation":"shul-KHAN","imageAsset":"assets/photos/living_room_table.webp","audioAsset":"assets/audio/living_room_table.wav","audioStatus":"user_verified","audioSha256":"8af17e9527cee66bba0a22ba2df52018fc9d7fd4bfd4ab69e7a4b786b3983444"},{"id":"living_room_television","categoryId":"living_room","hebrew":"טלוויזיה","english":"television","pronunciation":"te-le-VIZ-ya","imageAsset":"assets/photos/living_room_television.webp","audioAsset":"assets/audio/living_room_television.wav","audioStatus":"user_verified","audioSha256":"44e8493f2877fdec900d6f4a78aaeb749c12e878b8593e3c35e4f05b91e94268"},{"id":"living_room_sofa","categoryId":"living_room","hebrew":"ספה","english":"sofa","pronunciation":"sa-PA","imageAsset":"assets/photos/living_room_sofa.webp","audioAsset":"assets/audio/living_room_sofa.wav","audioStatus":"user_verified","audioSha256":"1307d7853ad948188fe41a6c8ce8ac867befc1fbf5a277b1ed70c9ca4822f6f0"},{"id":"living_room_lamp","categoryId":"living_room","hebrew":"מנורה","english":"lamp","pronunciation":"me-no-RA","imageAsset":"assets/photos/living_room_lamp.webp","audioAsset":"assets/audio/living_room_lamp.wav","audioStatus":"user_verified","audioSha256":"30d6b4310b2e4173303a36ffe6bd23e2a6ffd7a87d76ae3c7b85ac34e2719a56"},{"id":"living_room_window","categoryId":"living_room","hebrew":"חלון","english":"window","pronunciation":"kha-LON","imageAsset":"assets/photos/living_room_window.webp","audioAsset":"assets/audio/living_room_window.wav","audioStatus":"user_verified","audioSha256":"7e6f26250294a4a4c7037b6ad638f8e15ebd1f278bd5efa6377fc3c6e9c87758"},{"id":"living_room_door","categoryId":"living_room","hebrew":"דלת","english":"door","pronunciation":"DE-let","imageAsset":"assets/photos/living_room_door.webp","audioAsset":"assets/audio/living_room_door.wav","audioStatus":"user_verified","audioSha256":"7229f71c61dafcac34017515074485b4971ac3858f9d8278325e8656e44aaaf3"},{"id":"living_room_remote","categoryId":"living_room","hebrew":"שלט","english":"remote control","pronunciation":"sha-LAT","imageAsset":"assets/photos/living_room_remote.webp","audioAsset":"assets/audio/living_room_remote.wav","audioStatus":"user_verified","audioSha256":"578a4644fd6b0c2f85510e3ae67dba4a8072c9c36d60d02206fdf0006eed1bf1"},{"id":"living_room_pillow","categoryId":"living_room","hebrew":"כרית","english":"pillow","pronunciation":"ka-REET","imageAsset":"assets/photos/living_room_pillow.webp","audioAsset":"assets/audio/living_room_pillow.wav","audioStatus":"user_verified","audioSha256":"d4def6eb5bfa3a95a73803d341d4201fb3fc36499459854ab4253e5b16bd01ff"},{"id":"living_room_blanket","categoryId":"living_room","hebrew":"שמיכה","english":"blanket","pronunciation":"smi-KHA","imageAsset":"assets/photos/living_room_blanket.webp","audioAsset":"assets/audio/living_room_blanket.wav","audioStatus":"user_verified","audioSha256":"2ea6a71c53247dcdfef4b7a5b3c09fcb4f830fa198d7f2906cf7ca8112c97e8d"},{"id":"cleaning_clean","categoryId":"cleaning","hebrew":"לנקות","english":"to clean","pronunciation":"le-na-KOT","imageAsset":"assets/photos/cleaning_clean.webp","audioAsset":"assets/audio/cleaning_clean.wav","audioStatus":"user_verified","audioSha256":"2fd3a71a4dc2f3a3c0fa55946a8e698c6a72119e61fdc6a9278d84039953b6d8"},{"id":"cleaning_broom","categoryId":"cleaning","hebrew":"מטאטא","english":"broom","pronunciation":"mat-a-TE","imageAsset":"assets/photos/cleaning_broom.webp","audioAsset":"assets/audio/cleaning_broom.wav","audioStatus":"user_verified","audioSha256":"c8c20c2032494b6bbbf4694f8ba4ec5ad2e48f5d58ddab64e3a5c19bca1a8a0c"},{"id":"cleaning_bucket","categoryId":"cleaning","hebrew":"דלי","english":"bucket","pronunciation":"DLEE","imageAsset":"assets/photos/cleaning_bucket.webp","audioAsset":"assets/audio/cleaning_bucket.wav","audioStatus":"user_verified","audioSha256":"a37be5cf9e1caf785944d96d916e4c1bb9679dae6fb70fa0d17bd09b3c2e3507"},{"id":"cleaning_cloth","categoryId":"cleaning","hebrew":"סמרטוט","english":"cleaning cloth","pronunciation":"smar-TOOT","imageAsset":"assets/photos/cleaning_cloth.webp","audioAsset":"assets/audio/cleaning_cloth.wav","audioStatus":"user_verified","audioSha256":"a4e6f274b23f764d55699db21bce8f6e1e0ec43fb4ef7f24764d14a92191ecfc"},{"id":"cleaning_squeegee","categoryId":"cleaning","hebrew":"מגב","english":"floor squeegee","pronunciation":"ma-GEV","imageAsset":"assets/photos/cleaning_squeegee.webp","audioAsset":"assets/audio/cleaning_squeegee.wav","audioStatus":"user_verified","audioSha256":"8e768d4dd138d4091ed649a5c5caf8bae936212e2c834de1f237a0afa8ed841c"},{"id":"cleaning_sponge","categoryId":"cleaning","hebrew":"ספוג","english":"sponge","pronunciation":"SFOG","imageAsset":"assets/photos/cleaning_sponge.webp","audioAsset":"assets/audio/cleaning_sponge.wav","audioStatus":"user_verified","audioSha256":"88441899b19b9088c9cc9f3c00a90ff5da53f5e5644575f2cb5ff6488eb2da65"},{"id":"cleaning_gloves","categoryId":"cleaning","hebrew":"כפפות","english":"gloves","pronunciation":"kfa-FOT","imageAsset":"assets/photos/cleaning_gloves.webp","audioAsset":"assets/audio/cleaning_gloves.wav","audioStatus":"user_verified","audioSha256":"3dcd7d8698965111ea36c99e65dc96239d8007c44690abbe6e4a0bca70f87390"},{"id":"cleaning_bin","categoryId":"cleaning","hebrew":"פח","english":"trash bin","pronunciation":"PAKH","imageAsset":"assets/photos/cleaning_bin.webp","audioAsset":"assets/audio/cleaning_bin.wav","audioStatus":"user_verified","audioSha256":"e182c28413b34bad0f15ec9dbb6c2ccb31614f85581de33778dbe094e05c267a"},{"id":"cleaning_trash_bag","categoryId":"cleaning","hebrew":"שקית אשפה","english":"trash bag","pronunciation":"sa-KEET ash-PA","imageAsset":"assets/photos/cleaning_trash_bag.webp","audioAsset":"assets/audio/cleaning_trash_bag.wav","audioStatus":"user_verified","audioSha256":"acb46324b6dadbc1b86dd0c3c13fa62a71a697f0f5b8df6e5e4eaeeec7a505b4"},{"id":"cleaning_rinse","categoryId":"cleaning","hebrew":"לשטוף","english":"to rinse","pronunciation":"lish-TOF","imageAsset":"assets/photos/cleaning_rinse.webp","audioAsset":"assets/audio/cleaning_rinse.wav","audioStatus":"user_verified","audioSha256":"0f5601ee534c42534154b1fc61df24e6ae1cc4ea1f7e559b2609d42c184da38f"},{"id":"shopping_buy","categoryId":"shopping","hebrew":"לקנות","english":"to buy","pronunciation":"lik-NOT","imageAsset":"assets/photos/shopping_buy.webp","audioAsset":"assets/audio/shopping_buy.wav","audioStatus":"user_verified","audioSha256":"6c46a8e8b97005d9a14e1c98a66c6ab44ef2457d0a0ea622764ea9d046d94a63"},{"id":"shopping_price","categoryId":"shopping","hebrew":"מחיר","english":"price","pronunciation":"me-KHIR","imageAsset":"assets/photos/shopping_price.webp","audioAsset":"assets/audio/shopping_price.wav","audioStatus":"user_verified","audioSha256":"9599b94fc22e6ca24a13515d630098fe53a7c7f8d19716fbc3ef7e4f85d0aa81"},{"id":"shopping_money","categoryId":"shopping","hebrew":"כסף","english":"money","pronunciation":"KE-sef","imageAsset":"assets/photos/shopping_money.webp","audioAsset":"assets/audio/shopping_money.wav","audioStatus":"user_verified","audioSha256":"08a73fed9f2ad3002876117d744ca94ad99137f39f19a03f02d02dbfe7bc6a30"},{"id":"shopping_shop","categoryId":"shopping","hebrew":"חנות","english":"shop","pronunciation":"kha-NOOT","imageAsset":"assets/photos/shopping_shop.webp","audioAsset":"assets/audio/shopping_shop.wav","audioStatus":"user_verified","audioSha256":"3a9e4584899a0a765c1cb87190888217b35afae66690a1477fc0fc3e499358a6"},{"id":"shopping_checkout","categoryId":"shopping","hebrew":"קופה","english":"checkout","pronunciation":"koo-PA","imageAsset":"assets/photos/shopping_checkout.webp","audioAsset":"assets/audio/shopping_checkout.wav","audioStatus":"user_verified","audioSha256":"202af97ea9e1273f7ee457fdb83a24b8bcc5440524e968abc4fa7fd44a8fbb71"},{"id":"shopping_cart","categoryId":"shopping","hebrew":"עגלה","english":"shopping cart","pronunciation":"a-ga-LA","imageAsset":"assets/photos/shopping_cart.webp","audioAsset":"assets/audio/shopping_cart.wav","audioStatus":"user_verified","audioSha256":"fb9d143faf1790c4e24a8d156d304a9b5c3cbe85133d2cf3e7ed557b778c1880"},{"id":"shopping_bag","categoryId":"shopping","hebrew":"שקית","english":"bag","pronunciation":"sa-KEET","imageAsset":"assets/photos/shopping_bag.webp","audioAsset":"assets/audio/shopping_bag.wav","audioStatus":"user_verified","audioSha256":"7b7f84a87de17c83cadede99abdbe75bfc45dab91e171c76be8f6cb8aff161bf"},{"id":"shopping_receipt","categoryId":"shopping","hebrew":"קבלה","english":"receipt","pronunciation":"ka-ba-LA","imageAsset":"assets/photos/shopping_receipt.webp","audioAsset":"assets/audio/shopping_receipt.wav","audioStatus":"user_verified","audioSha256":"1cbfbefe47095420817f1403e760d1da5eddad9b5b1d7fdd340b7bace7806a3c"},{"id":"shopping_pay","categoryId":"shopping","hebrew":"לשלם","english":"to pay","pronunciation":"le-sha-LEM","imageAsset":"assets/photos/shopping_pay.webp","audioAsset":"assets/audio/shopping_pay.wav","audioStatus":"user_verified","audioSha256":"e91950d2f85100aa94158e91a08eba97e5091b990fc86c1b38ab84a2fba914fc"},{"id":"shopping_change","categoryId":"shopping","hebrew":"עודף","english":"change (money)","pronunciation":"O-def","imageAsset":"assets/photos/shopping_change.webp","audioAsset":"assets/audio/shopping_change.wav","audioStatus":"user_verified","audioSha256":"2417ce2978e3aa5530113127f784ec45ba54c539cf106b2d26186d6b746ab133"},{"id":"outside_street","categoryId":"outside","hebrew":"רחוב","english":"street","pronunciation":"re-KHOV","imageAsset":"assets/photos/outside_street.webp","audioAsset":"assets/audio/outside_street.wav","audioStatus":"user_verified","audioSha256":"1706e59c984f7872926d355f75d75670f5672852ac1b52f98f394641f799eb94"},{"id":"outside_bus","categoryId":"outside","hebrew":"אוטובוס","english":"bus","pronunciation":"o-TO-bus","imageAsset":"assets/photos/outside_bus.webp","audioAsset":"assets/audio/outside_bus.wav","audioStatus":"user_verified","audioSha256":"903c7d0f43caad08e9fe250a0c42b63889cf1e0178a523e09ff9c6356dd18d7e"},{"id":"outside_sidewalk","categoryId":"outside","hebrew":"מדרכה","english":"sidewalk","pronunciation":"mid-ra-KHA","imageAsset":"assets/photos/outside_sidewalk.webp","audioAsset":"assets/audio/outside_sidewalk.wav","audioStatus":"user_verified","audioSha256":"e8a86e0d07c12a0e4de5469a657ff7f17a002dc73388bb43912338955ebd5e1d"},{"id":"outside_car","categoryId":"outside","hebrew":"מכונית","english":"car","pronunciation":"me-kho-NEET","imageAsset":"assets/photos/outside_car.webp","audioAsset":"assets/audio/outside_car.wav","audioStatus":"user_verified","audioSha256":"c10aba2d9362f2bbbbe7afcd85461c60d62ce0e7e918330169ef82a4eab580bc"},{"id":"outside_taxi","categoryId":"outside","hebrew":"מונית","english":"taxi","pronunciation":"mo-NEET","imageAsset":"assets/photos/outside_taxi.webp","audioAsset":"assets/audio/outside_taxi.wav","audioStatus":"user_verified","audioSha256":"73dc8698be12ce7a68e7e4aea74bbdc48c6fb3548f834924778da19f8fadb29a"},{"id":"outside_bus_stop","categoryId":"outside","hebrew":"תחנה","english":"bus stop","pronunciation":"ta-kha-NA","imageAsset":"assets/photos/outside_bus_stop.webp","audioAsset":"assets/audio/outside_bus_stop.wav","audioStatus":"user_verified","audioSha256":"fbabdc5bfe72231dfb5c035e1ca6bb2faca4c519043151916e53d2caf9bdd06e"},{"id":"outside_traffic_light","categoryId":"outside","hebrew":"רמזור","english":"traffic light","pronunciation":"ram-ZOR","imageAsset":"assets/photos/outside_traffic_light.webp","audioAsset":"assets/audio/outside_traffic_light.wav","audioStatus":"user_verified","audioSha256":"4a9b0380c5ae13a87d315b0d7c0596aa00144dc067f164f66e9cd5df92d53ac7"},{"id":"outside_crosswalk","categoryId":"outside","hebrew":"מעבר חצייה","english":"crosswalk","pronunciation":"ma-a-VAR kha-tsa-YA","imageAsset":"assets/photos/outside_crosswalk.webp","audioAsset":"assets/audio/outside_crosswalk.wav","audioStatus":"user_verified","audioSha256":"bfc6a8959ef3e21fb2c9a8fb3909afa4949a9d80dee4486ad48e44cd3c8f1bb9"},{"id":"outside_house","categoryId":"outside","hebrew":"בית","english":"house","pronunciation":"BA-yit","imageAsset":"assets/photos/outside_house.webp","audioAsset":"assets/audio/outside_house.wav","audioStatus":"user_verified","audioSha256":"e7a9a728b9058371ec3cd85eb5764d5c76646cc046cb04c7a1c80672e2d22dda"},{"id":"outside_park","categoryId":"outside","hebrew":"פארק","english":"park","pronunciation":"PARK","imageAsset":"assets/photos/outside_park.webp","audioAsset":"assets/audio/outside_park.wav","audioStatus":"user_verified","audioSha256":"8ce6c5c175514c5f36975c73710b3f405c9906ef205c47908ab9195e35ef0e8c"},{"id":"feelings_smile","categoryId":"feelings","hebrew":"חיוך","english":"smile","pronunciation":"khi-YUKH","imageAsset":"assets/photos/feelings_smile.webp","audioAsset":"assets/audio/feelings_smile.wav","audioStatus":"user_verified","audioSha256":"aa6e0fda88d537e055ea97c3d36bd92c1d231b16fb63b6b2ffa1e9966f49a3a9"},{"id":"feelings_sadness","categoryId":"feelings","hebrew":"עצב","english":"sadness","pronunciation":"E-tsev","imageAsset":"assets/photos/feelings_sadness.webp","audioAsset":"assets/audio/feelings_sadness.wav","audioStatus":"user_verified","audioSha256":"2a1173d8d02c5ebb10b88156e86b48972f5dc456178afc451e0732696ef074b7"},{"id":"feelings_fear","categoryId":"feelings","hebrew":"פחד","english":"fear","pronunciation":"PA-khad","imageAsset":"assets/photos/feelings_fear.webp","audioAsset":"assets/audio/feelings_fear.wav","audioStatus":"user_verified","audioSha256":"1e71f1b6d97dc5aa2808113ee2b291629767a2d4bdb1166e7c9bde173aeb773e"},{"id":"feelings_joy","categoryId":"feelings","hebrew":"שמחה","english":"joy","pronunciation":"sim-KHA","imageAsset":"assets/photos/feelings_joy.webp","audioAsset":"assets/audio/feelings_joy.wav","audioStatus":"user_verified","audioSha256":"cb604320407d6104f014434ab98e9470d90a03a43fcc017846e6e782e707daae"},{"id":"feelings_anger","categoryId":"feelings","hebrew":"כעס","english":"anger","pronunciation":"KA-as","imageAsset":"assets/photos/feelings_anger.webp","audioAsset":"assets/audio/feelings_anger.wav","audioStatus":"user_verified","audioSha256":"92c1d5ba4cb133c157bf5779b633a1c70e60efa2f4d5e96aba722f0e39dc3d05"},{"id":"feelings_worry","categoryId":"feelings","hebrew":"דאגה","english":"worry","pronunciation":"de-a-GA","imageAsset":"assets/photos/feelings_worry.webp","audioAsset":"assets/audio/feelings_worry.wav","audioStatus":"user_verified","audioSha256":"9c0774d518d7c6b8d39003af2a020fa766503d2274bf893b4f64b3df6b3fd1d2"},{"id":"feelings_tiredness","categoryId":"feelings","hebrew":"עייפות","english":"tiredness","pronunciation":"a-ye-FOOT","imageAsset":"assets/photos/feelings_tiredness.webp","audioAsset":"assets/audio/feelings_tiredness.wav","audioStatus":"user_verified","audioSha256":"fc74b0ddd7596307a5f021834cabebe5503626edc94a85db9a097666c67e12f3"},{"id":"feelings_pain","categoryId":"feelings","hebrew":"כאב","english":"pain","pronunciation":"ke-EV","imageAsset":"assets/photos/feelings_pain.webp","audioAsset":"assets/audio/feelings_pain.wav","audioStatus":"user_verified","audioSha256":"9008416340740fdad6e967448aa1aa985866658a12bb00dd0b011a1b8cdb4096"},{"id":"feelings_calm","categoryId":"feelings","hebrew":"רוגע","english":"calm","pronunciation":"RO-ga","imageAsset":"assets/photos/feelings_calm.webp","audioAsset":"assets/audio/feelings_calm.wav","audioStatus":"user_verified","audioSha256":"7fffff8f0d375186156aff89ab0a7de689daf53c43b7e29aefed90f26c82539d"},{"id":"feelings_surprise","categoryId":"feelings","hebrew":"הפתעה","english":"surprise","pronunciation":"haf-ta-A","imageAsset":"assets/photos/feelings_surprise.webp","audioAsset":"assets/audio/feelings_surprise.wav","audioStatus":"user_verified","audioSha256":"91b53de17bffaf34e275c42eb5358f1d04cbb1473c35f08065d916ea82678900"},{"id":"safety_help","categoryId":"safety","hebrew":"עזרה","english":"help","pronunciation":"ez-RA","imageAsset":"assets/photos/safety_help.webp","audioAsset":"assets/audio/safety_help.wav","audioStatus":"user_verified","audioSha256":"fe7a64d576a4c716d8203c57c3b78e748b9272cb9be42c8651dbf0fccc3aa000"},{"id":"safety_danger","categoryId":"safety","hebrew":"סכנה","english":"danger","pronunciation":"sa-ka-NA","imageAsset":"assets/photos/safety_danger.webp","audioAsset":"assets/audio/safety_danger.wav","audioStatus":"user_verified","audioSha256":"050cea3ba1b4b0260d22ddd82e8ea1ef3a4bb7d75d3b6391e5b06a7d5203414d"},{"id":"safety_emergency","categoryId":"safety","hebrew":"חירום","english":"emergency","pronunciation":"khe-ROOM","imageAsset":"assets/photos/safety_emergency.webp","audioAsset":"assets/audio/safety_emergency.wav","audioStatus":"user_verified","audioSha256":"1711caa84c157140b32db2a422de2a020bf5b4300ed2dd69118877429d253dbb"},{"id":"safety_caution","categoryId":"safety","hebrew":"זהירות","english":"caution","pronunciation":"ze-hi-ROOT","imageAsset":"assets/photos/safety_caution.webp","audioAsset":"assets/audio/safety_caution.wav","audioStatus":"user_verified","audioSha256":"5ffdd7528c4263f9d7ca17d963006a136e04edfd1a7ac517a2eae125943082ce"},{"id":"safety_stop","categoryId":"safety","hebrew":"לעצור","english":"to stop","pronunciation":"la-a-TSOR","imageAsset":"assets/photos/safety_stop.webp","audioAsset":"assets/audio/safety_stop.wav","audioStatus":"user_verified","audioSha256":"eacd0f63ccf1d34a803a7cc041a8df38fd948a80ad1f9003c9512a67ef91939e"},{"id":"safety_phone","categoryId":"safety","hebrew":"טלפון","english":"telephone","pronunciation":"te-le-FON","imageAsset":"assets/photos/safety_phone.webp","audioAsset":"assets/audio/safety_phone.wav","audioStatus":"user_verified","audioSha256":"b0295c5a038ee2a234806b391741999c07a627cfa1ee2e965518bd4c2ee7a944"},{"id":"safety_doctor","categoryId":"safety","hebrew":"רופא","english":"doctor","pronunciation":"ro-FE","imageAsset":"assets/photos/safety_doctor.webp","audioAsset":"assets/audio/safety_doctor.wav","audioStatus":"user_verified","audioSha256":"b62365a8d4dac46771493695e3649cdd4c55362a7a8c45b37b9f108f16c87317"},{"id":"safety_ambulance","categoryId":"safety","hebrew":"אמבולנס","english":"ambulance","pronunciation":"am-boo-LANS","imageAsset":"assets/photos/safety_ambulance.webp","audioAsset":"assets/audio/safety_ambulance.wav","audioStatus":"user_verified","audioSha256":"bc46b33ad95d15b966f4c10f01ecfd4bf3c36bd5e7dfbc1f0bca1572077108c4"},{"id":"safety_address","categoryId":"safety","hebrew":"כתובת","english":"address","pronunciation":"KTO-vet","imageAsset":"assets/photos/safety_address.webp","audioAsset":"assets/audio/safety_address.wav","audioStatus":"user_verified","audioSha256":"cd0d78982f0aaa96e1565852bf1b1ea56b90d5822386267bc30e02a3fb7fe3ce"},{"id":"safety_key","categoryId":"safety","hebrew":"מפתח","english":"key","pronunciation":"maf-TE-akh","imageAsset":"assets/photos/safety_key.webp","audioAsset":"assets/audio/safety_key.wav","audioStatus":"user_verified","audioSha256":"901ed075a977e35714f7ef748aad23331db9a14458fb79bd75a1f4acd492e3b8"},{"id":"conversation_want","categoryId":"conversation","hebrew":"רוצה","english":"want","pronunciation":"ro-TSE","imageAsset":"assets/photos/conversation_want.webp","audioAsset":"assets/audio/conversation_want.wav","audioStatus":"user_verified","audioSha256":"eb8ba3e9a4fd8a767264007a9df1182c8a7a2abb0247e15a14df5801fab4d4a3"},{"id":"conversation_not_want","categoryId":"conversation","hebrew":"לא רוצה","english":"do not want","pronunciation":"lo ro-TSE","imageAsset":"assets/photos/conversation_not_want.webp","audioAsset":"assets/audio/conversation_not_want.wav","audioStatus":"user_verified","audioSha256":"b9528b4d3f4a9582221ac3409cb133a245736e5eb8c220cea379016e6dc89dd4"},{"id":"conversation_pleasant","categoryId":"conversation","hebrew":"נעים","english":"pleasant","pronunciation":"na-EEM","imageAsset":"assets/photos/conversation_pleasant.webp","audioAsset":"assets/audio/conversation_pleasant.wav","audioStatus":"user_verified","audioSha256":"3b560e07076b89b48c0d80a3b7c03777c5610b77d77ef766b341e719bad5905b"},{"id":"conversation_unpleasant","categoryId":"conversation","hebrew":"לא נעים","english":"unpleasant","pronunciation":"lo na-EEM","imageAsset":"assets/photos/conversation_unpleasant.webp","audioAsset":"assets/audio/conversation_unpleasant.wav","audioStatus":"user_verified","audioSha256":"6594ccc99baa82306cdf9c1e1d7a4f29d1501af2870a55b7339859d5ad755ebb"},{"id":"conversation_thank_you","categoryId":"conversation","hebrew":"תודה","english":"thank you","pronunciation":"to-DA","imageAsset":"assets/photos/conversation_thank_you.webp","audioAsset":"assets/audio/conversation_thank_you.wav","audioStatus":"user_verified","audioSha256":"6dd3bce40fd13fb3c5ffd25f91864faf460a5a819f1843753b84109722474f8a"},{"id":"conversation_please","categoryId":"conversation","hebrew":"בבקשה","english":"please","pronunciation":"be-va-ka-SHA","imageAsset":"assets/photos/conversation_please.webp","audioAsset":"assets/audio/conversation_please.wav","audioStatus":"user_verified","audioSha256":"b045b695ad84f96156dcde655de71c1c249abb947bd1a4529a917daa52385379"},{"id":"conversation_hello","categoryId":"conversation","hebrew":"שלום","english":"hello","pronunciation":"sha-LOM","imageAsset":"assets/photos/conversation_hello.webp","audioAsset":"assets/audio/conversation_hello.wav","audioStatus":"user_verified","audioSha256":"ce6a078e1705d24563dfa30c31f76433246f45ad542925c598986705e5416a30"},{"id":"conversation_goodbye","categoryId":"conversation","hebrew":"להתראות","english":"goodbye","pronunciation":"le-hit-ra-OT","imageAsset":"assets/photos/conversation_goodbye.webp","audioAsset":"assets/audio/conversation_goodbye.wav","audioStatus":"user_verified","audioSha256":"f72a9db85aff55c30c61d9c0261b4e6cab16abd402a8295e9b38ac2f8546be11"},{"id":"conversation_enough","categoryId":"conversation","hebrew":"די","english":"enough","pronunciation":"DAI","imageAsset":"assets/photos/conversation_enough.webp","audioAsset":"assets/audio/conversation_enough.wav","audioStatus":"user_verified","audioSha256":"17e5ca0bc222d9c50e70c860a84ba5272bc059aa758aba9e5c586ea0759fd66e"},{"id":"conversation_more","categoryId":"conversation","hebrew":"עוד","english":"more","pronunciation":"OD","imageAsset":"assets/photos/conversation_more.webp","audioAsset":"assets/audio/conversation_more.wav","audioStatus":"user_verified","audioSha256":"195de96afc2fcfc54da4ace2889b0c1a53d820e39f03ccefaf963ce1682c9ffe"},{"id":"fun_music","categoryId":"fun","hebrew":"מוסיקה","english":"music","pronunciation":"MU-zi-ka","imageAsset":"assets/photos/fun_music.webp","audioAsset":"assets/audio/fun_music.wav","audioStatus":"user_verified","audioSha256":"2749364721060cd3c50e120b603704472e68da7188b93843afbdf51d727f355d"},{"id":"fun_outing","categoryId":"fun","hebrew":"טיול","english":"outing","pronunciation":"ti-YUL","imageAsset":"assets/photos/fun_outing.webp","audioAsset":"assets/audio/fun_outing.wav","audioStatus":"user_verified","audioSha256":"b2e7bcda6cfcb66a38b4b9efe8aab173bf0ddfcccc317a7ce87bc093e1eb148a"},{"id":"fun_friends","categoryId":"fun","hebrew":"חברים","english":"friends","pronunciation":"kha-ve-RIM","imageAsset":"assets/photos/fun_friends.webp","audioAsset":"assets/audio/fun_friends.wav","audioStatus":"user_verified","audioSha256":"53179f12de4c38fd0670a487f2647811bf535f013fab0c405f62b0def8504408"},{"id":"fun_dancing","categoryId":"fun","hebrew":"ריקוד","english":"dancing","pronunciation":"ri-KUD","imageAsset":"assets/photos/fun_dancing.webp","audioAsset":"assets/audio/fun_dancing.wav","audioStatus":"user_verified","audioSha256":"1cecd8c56ae9e136d3a87890bc0ade20db09a351bda1f6d710e0aba704bdf87d"},{"id":"fun_singing","categoryId":"fun","hebrew":"שירה","english":"singing","pronunciation":"shi-RA","imageAsset":"assets/photos/fun_singing.webp","audioAsset":"assets/audio/fun_singing.wav","audioStatus":"user_verified","audioSha256":"63ea494af63eecbff816c52126705aa7a67bf4422eaa15e85f35bbe4ab9fe98e"},{"id":"fun_game","categoryId":"fun","hebrew":"משחק","english":"game","pronunciation":"mis-KHAK","imageAsset":"assets/photos/fun_game.webp","audioAsset":"assets/audio/fun_game.wav","audioStatus":"user_verified","audioSha256":"9f2cede1ebe50db986de897ced13f54d8e3dd5618e81c2d05d90d80131be2134"},{"id":"fun_movie","categoryId":"fun","hebrew":"סרט","english":"movie","pronunciation":"SE-ret","imageAsset":"assets/photos/fun_movie.webp","audioAsset":"assets/audio/fun_movie.wav","audioStatus":"user_verified","audioSha256":"2b1084bb332e9ddec715a9ca6ceed58f422f50da4d48208015e9d7ea0df6479e"},{"id":"fun_book","categoryId":"fun","hebrew":"ספר","english":"book","pronunciation":"SE-fer","imageAsset":"assets/photos/fun_book.webp","audioAsset":"assets/audio/fun_book.wav","audioStatus":"user_verified","audioSha256":"d33abce60950458dae4b9f2c4306c0e988a2dbca11458c98ad4442b88cab3e1b"},{"id":"fun_garden","categoryId":"fun","hebrew":"גינה","english":"garden","pronunciation":"gi-NA","imageAsset":"assets/photos/fun_garden.webp","audioAsset":"assets/audio/fun_garden.wav","audioStatus":"user_verified","audioSha256":"4af260c2f715bb00d106a9f919404021af39ff0e1ec9b9592c8b31ea53631c0b"},{"id":"fun_laughter","categoryId":"fun","hebrew":"צחוק","english":"laughter","pronunciation":"ts-KHOK","imageAsset":"assets/photos/fun_laughter.webp","audioAsset":"assets/audio/fun_laughter.wav","audioStatus":"user_verified","audioSha256":"120200959541cfb08d3a4b3aa7c6faa604782468196392e7be5f4e78ad2eb59f"}]}</script>
+<script>/* Device-local settings shared by word playback and generated feedback sounds. */
+(function () {
+  'use strict';
+  const key = 'hebrew-learning-settings-v1';
+  const defaults = {soundEnabled:true, volume:1, showPictures:true, layout:'phone'};
+  let settings = {...defaults};
+  const listeners = new Set();
+  function clean(input) {
+    return {
+      soundEnabled:typeof input?.soundEnabled === 'boolean' ? input.soundEnabled : true,
+      volume:typeof input?.volume === 'number' && Number.isFinite(input.volume) ? Math.max(0,Math.min(1,input.volume)) : 1,
+      showPictures:typeof input?.showPictures === 'boolean' ? input.showPictures : true,
+      layout:input?.layout === 'ktc-24' ? 'ktc-24' : 'phone',
+    };
+  }
+  try { settings = clean(JSON.parse(localStorage.getItem(key) || '{}')); } catch (_) {}
+  function set(patch) {
+    settings = clean({...settings,...patch});
+    try { localStorage.setItem(key,JSON.stringify(settings)); } catch (_) {}
+    listeners.forEach(listener => listener({...settings}));
+  }
+  globalThis.AppPreferences = {
+    get:() => ({...settings}),
+    effectiveVolume:() => settings.soundEnabled ? settings.volume : 0,
+    set, reset:() => set(defaults),
+    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
+  };
+})();
+</script>
+<script>/* Gentle answer feedback. All notes and animation are produced on the device. */
+(function () {
+  'use strict';
+  let context = null;
+  let generation = 0;
+  let celebration = null;
+  let cleanupTimer = null;
+  let shakenBox = null;
+  const voices = new Set();
+
+  function clear() {
+    generation++;
+    clearTimeout(cleanupTimer);
+    celebration?.remove(); celebration = null;
+    shakenBox?.classList.remove('quiz-shake'); shakenBox = null;
+    for (const voice of voices) {
+      try {
+        const now = context.currentTime;
+        voice.gain.gain.cancelScheduledValues(now);
+        voice.gain.gain.setTargetAtTime(0, now, 0.012);
+        voice.oscillator.stop(now + 0.04);
+      } catch (_) {}
+    }
+    voices.clear();
+  }
+
+  async function chime(correct, token, tier, milestoneCount) {
+    try {
+      const volume = globalThis.AppPreferences?.effectiveVolume() ?? 1;
+      if (volume <= 0) return;
+      const AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext;
+      if (!AudioContextClass) return;
+      if (!context || context.state === 'closed') context = new AudioContextClass();
+      if (context.state === 'suspended') await context.resume();
+      if (token !== generation) return;
+      const firstTen = !!tier && milestoneCount === 10;
+      // Soft ascending bells for success; two mellow descending notes for retry.
+      const notes = firstTen ? [523.25,659.25,783.99,1046.5,783.99,1046.5,1318.51] : tier === 'grand' ? [523.25,659.25,783.99,1046.5,783.99,1046.5,1174.66,1318.51] : tier === 'special' ? [523.25,659.25,783.99,987.77,1046.5,1318.51] : correct ? [523.25, 659.25, 783.99, 1046.5] : [329.63, 261.63];
+      const spacing = firstTen ? 0.13 : tier ? 0.12 : correct ? 0.085 : 0.13;
+      const duration = correct ? 0.24 : 0.21;
+      const now = context.currentTime;
+      notes.forEach((frequency, index) => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        const at = now + index * spacing;
+        const noteDuration = firstTen && index === notes.length - 1 ? 0.44 : duration;
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, at);
+        gain.gain.setValueAtTime(0.0001 * volume, now);
+        gain.gain.setValueAtTime(0.0001 * volume, at);
+        gain.gain.exponentialRampToValueAtTime((correct ? 0.055 : 0.045) * volume, at + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001 * volume, at + noteDuration);
+        oscillator.connect(gain); gain.connect(context.destination);
+        const voice = {oscillator, gain}; voices.add(voice);
+        oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); voices.delete(voice); };
+        oscillator.start(at); oscillator.stop(at + noteDuration + 0.015);
+      });
+    } catch (_) {
+      // Visual and text feedback remain available if audio is unavailable.
+    }
+  }
+
+  function fireworks(box, tier) {
+    const rect = box.getBoundingClientRect();
+    const layer = document.createElement('div');
+    layer.className = 'quiz-celebration'; layer.setAttribute('aria-hidden', 'true');
+    const colors = ['#138b87', '#d9a72f', '#d58579', '#8b80bd'];
+    const bursts = tier === 'grand' ? 15 : tier === 'special' ? 9 : tier ? 5 : 3;
+    for (let burst = 0; burst < bursts; burst++) {
+      const x = rect.left + rect.width * (0.15 + (burst % 5) * 0.175);
+      const y = Math.max(24, rect.top + rect.height * (tier ? 0.1 + (burst % 3) * 0.3 : 0.25));
+      for (let ray = 0; ray < 8; ray++) {
+        const spark = document.createElement('span'); spark.className = 'quiz-spark';
+        const angle = ray * Math.PI / 4;
+        const distance = (tier === 'grand' ? 80 : tier ? 55 : 33) + (ray % 3) * 10;
+        spark.style.left = `${x}px`; spark.style.top = `${y}px`;
+        spark.style.setProperty('--dx', `${Math.cos(angle) * distance}px`);
+        spark.style.setProperty('--dy', `${Math.sin(angle) * distance - 10}px`);
+        spark.style.setProperty('--delay', `${burst * 110}ms`);
+        spark.style.setProperty('--spark-color', colors[(ray + burst) % colors.length]);
+        layer.appendChild(spark);
+      }
+    }
+    celebration = layer; (tier ? box : document.body).appendChild(layer);
+    cleanupTimer = setTimeout(() => { layer.remove(); if (celebration === layer) celebration = null; }, tier ? 2500 : 1000);
+  }
+
+  function show(correct, box) {
+    clear();
+    void chime(correct, generation);
+    if (!box || globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    if (correct) fireworks(box);
+    else {
+      shakenBox = box; box.classList.add('quiz-shake');
+      box.addEventListener('animationend', () => { box.classList.remove('quiz-shake'); if (shakenBox === box) shakenBox = null; }, {once:true});
+    }
+  }
+
+  globalThis.addEventListener('pagehide', () => {
+    clear();
+    if (context && context.state !== 'closed') void context.close().catch(() => {});
+    context = null;
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clear(); });
+  function celebrate(tier, box, milestoneCount) {
+    clear();
+    void chime(true, generation, tier, milestoneCount);
+    if (box && !globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) fireworks(box, tier);
+  }
+  globalThis.QuizFeedback = {show, clear, celebrate};
+})();
+</script>
+<script>/* Milestones use the same unique word stars as the topic and total counters. */
+(function () {
+  'use strict';
+  let capacity = 100;
+  let thresholds = [10,20,30,40,50,60,70,80,90,100];
+  let activeDialog = null;
+  let returnFocus = null;
+  const halfway = () => Math.ceil(capacity / 20) * 10;
+  const tier = count => count === capacity ? 'grand' : (count === halfway() || count === capacity-10) ? 'special' : 'standard';
+  const icon = count => count === capacity ? '👑' : count === capacity-10 ? '💎' : count === halfway() ? '🏆' : '⭐';
+  const title = count => count === capacity ? 'You did it!' : count === capacity-10 ? 'Almost there!' : count === halfway() ? 'Halfway there!' : 'Great progress!';
+  function configure(wordCount) {
+    if (!Number.isInteger(wordCount) || wordCount < 10 || wordCount % 10) throw new Error('Milestones require complete ten-word topics');
+    capacity = wordCount;
+    thresholds = Array.from({length:capacity/10},(_,index)=>(index+1)*10);
+  }
+
+  function markup(total) {
+    return `<div class="milestone-track" aria-label="Star milestones">${thresholds.map(count =>
+      `<span class="milestone-badge ${tier(count)} ${total >= count ? 'unlocked' : 'locked'}" role="img" aria-label="${count} stars: ${total >= count ? 'earned' : 'not yet earned'}"><span aria-hidden="true">${icon(count)}</span><strong>${count}</strong></span>`
+    ).join('')}</div>`;
+  }
+
+  function dismiss() {
+    if (!activeDialog) return;
+    const dialog = activeDialog; activeDialog = null;
+    QuizFeedback.clear();
+    dialog.close(); dialog.remove();
+    if (returnFocus?.isConnected) returnFocus.focus();
+    returnFocus = null;
+  }
+
+  function check(before, after, focusTarget) {
+    const crossed = thresholds.filter(count => before < count && after >= count);
+    if (!crossed.length) return false;
+    const count = crossed.at(-1);
+    dismiss();
+    returnFocus = focusTarget || document.activeElement;
+    const dialog = document.createElement('dialog');
+    dialog.className = `milestone-dialog ${tier(count)}`;
+    dialog.setAttribute('aria-labelledby', 'milestone-title');
+    dialog.setAttribute('aria-describedby', 'milestone-count');
+    dialog.innerHTML = `<div class="milestone-medal" aria-hidden="true">${icon(count)}</div><h2 id="milestone-title">${title(count)}</h2><p id="milestone-count">${count} stars earned</p><p>${count === capacity ? `All ${capacity} words. What an achievement!` : count === capacity-10 ? `Just 10 more to reach ${capacity}!` : count === halfway() ? `${count} words, one amazing journey.` : 'One word at a time. Keep going!'}</p><button class="primary" autofocus>Keep learning</button>`;
+    dialog.querySelector('button').addEventListener('click', dismiss);
+    dialog.addEventListener('cancel', event => { event.preventDefault(); dismiss(); });
+    document.body.appendChild(dialog);
+    activeDialog = dialog;
+    dialog.showModal();
+    QuizFeedback.celebrate(tier(count), dialog, count);
+    return true;
+  }
+
+  globalThis.addEventListener('pagehide', dismiss);
+  globalThis.MilestoneRewards = {configure, markup, check, dismiss};
+})();
+</script>
+<script>/* The Android bridge owns GitHub HTTPS, checksums and atomic content activation. */
+(function(){
+  'use strict';
+  const native=globalThis.HebrewLearningNative;
+  let busy=false,reloading=false;
+  const status=value=>{const el=document.getElementById('native-update-status');if(el)el.textContent=value;};
+  function activate(){
+    if(!native)return;
+    try{
+      const result=JSON.parse(native.activateContent());
+      if(result.changed&&!busy&&!reloading){reloading=true;location.reload();}
+    }catch(_) {status('The current lessons are still available.');}
+  }
+  function setBusy(value){busy=value;if(native){native.setRoundActive(value);if(!value)activate();}}
+  function check(){
+    if(!native)return;
+    try{
+      const result=JSON.parse(native.checkForUpdates());
+      status(result.status==='not-configured'?'Updates are not available in this test version.':'Checking for updates…');
+    }catch(_){status('Update check unavailable. Your lessons still work.');}
+  }
+  if(native){
+    const section=document.getElementById('native-updates');if(section)section.hidden=false;
+    document.getElementById('check-updates')?.addEventListener('click',check);
+    try{const info=JSON.parse(native.getStatus());document.getElementById('app-version').textContent='Version '+info.appVersion;}catch(_){}
+  }
+  globalThis.addEventListener('hebrew:native',event=>{
+    const detail=event.detail||{};
+    if(detail.status==='offline'){status('Offline. Your lessons are available.');return;}
+    if(detail.status==='error'){status('Update unavailable. Your current lessons are safe.');return;}
+    if(detail.event==='update-check'&&detail.status==='checked'){
+      status(detail.appUpdateAvailable?'App update available.':detail.contentUpdateAvailable?'Downloading new lessons…':'Up to date.');
+    }
+    if(detail.event==='content-download'){
+      if(detail.status==='progress')status(`Updating lessons: ${detail.completedFiles} / ${detail.totalFiles}`);
+      if(detail.status==='ready'){status(busy?'New lessons will open when you return to topics.':'New lessons are ready.');activate();}
+    }
+    if(detail.event==='content-activation'&&detail.changed&&!busy&&!reloading){reloading=true;location.reload();}
+    if(detail.event==='apk-update'&&detail.status==='downloading')status('Downloading the app update…');
+  });
+  globalThis.NativeUpdates={setBusy,check};
+})();
+</script>
+<script>
+const data = (()=>{
+  const bundled=JSON.parse(document.getElementById('seed').textContent);
+  try{
+    if(globalThis.HebrewLearningNative){const active=JSON.parse(HebrewLearningNative.getVocabulary());if(active&&Array.isArray(active.words)&&Array.isArray(active.categories)&&active.words.length)return active;}
+  }catch(_){}
+  return bundled;
+})();
+const words = data.words;
+MilestoneRewards.configure(words.length);
+const categories = data.categories;
+const byId = id => words.find(w => w.id === id);
+const byCategory = id => words.filter(w => w.categoryId === id);
+const photo = w => '../content/' + w.imageAsset;
+const audioUrl = w => '../content/' + w.audioAsset + '?v=' + (w.audioSha256 || 'original');
+const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const quizLabel = () => AppPreferences.get().showPictures ? 'Match Hebrew to picture' : 'Match Hebrew to English';
+const topicInstructions = () => AppPreferences.get().showPictures ? 'Tap a word to see its picture and meaning.' : 'Tap a word to see its meaning.';
+const main = document.getElementById('main');
+const back = document.getElementById('back');
+let view = 'home', categoryId = '', wordIndex = 0, quizIndex = 0, answered = false;
+let attempts = 0, quizStars = 0, quizNewStars = 0, quizChoiceCount = 3;
+let starredWords = new Set();
+let done = new Set();
+try { done = new Set(JSON.parse(localStorage.getItem('hebrew-care-done') || '[]')); } catch (_) {}
+// Apply the user's requested fresh start once. Later reloads retain new rewards.
+const starResetVersion='2026-10-22-fresh-start-1';
+try {
+  if(localStorage.getItem('hebrew-learning-star-reset-version')!==starResetVersion){
+    localStorage.removeItem('hebrew-learning-stars-v1');
+    localStorage.removeItem('hebrew-learning-word-stars-v1');
+    localStorage.setItem('hebrew-learning-star-reset-version',starResetVersion);
+  }else{
+    const stored=JSON.parse(localStorage.getItem('hebrew-learning-word-stars-v1') || '[]');
+    if(Array.isArray(stored))starredWords=new Set(stored.filter(id=>byId(id)));
+  }
+} catch (_) {}
+// Every displayed total comes from the same word IDs used by the topic stars.
+function totalStars() { return starredWords.size; }
+function save() { try { localStorage.setItem('hebrew-care-done', JSON.stringify([...done])); localStorage.setItem('hebrew-learning-word-stars-v1', JSON.stringify([...starredWords])); } catch (_) {} }
+function starsMarkup(earned, count) { return `<span class="star-icons" role="img" aria-label="${earned} of ${count} stars">${Array.from({length:count},(_,i)=>`<svg viewBox="0 0 24 24" aria-hidden="true"${i<earned?'':' class="star-empty"'} fill="${i<earned?'currentColor':'none'}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="m12 2.5 2.9 5.88 6.49.94-4.7 4.58 1.11 6.47-5.8-3.06-5.8 3.06 1.11-6.47-4.7-4.58 6.49-.94Z"/></svg>`).join('')}</span>`; }
+function topicStars(id) { return byCategory(id).filter(w=>starredWords.has(w.id)).length; }
+function shuffled(items) { const result=[...items];for(let i=result.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result; }
+function resetTopicStars(id) {
+  if(!categories.some(c=>c.id===id))return;
+  for(const word of byCategory(id))starredWords.delete(word.id);
+  quizStars=0;quizNewStars=0;save();showCategory(id);
+}
+function quizRewards() { return `${starsMarkup(topicStars(categoryId),byCategory(categoryId).length)}<span>★ ${totalStars()} total</span>`; }
+function heading(eyebrow, title) { QuizFeedback.clear(); globalThis.NativeUpdates?.setBusy(view!=='home'); document.body.classList.toggle('home-screen',view==='home'); const label=document.getElementById('eyebrow'),name=document.getElementById('title'); label.textContent=eyebrow; name.textContent=title; label.hidden=view==='home'||!eyebrow; name.hidden=view==='home'; back.hidden=view==='home'; }
+function showHome() {
+  view='home'; heading('','');
+  const icons=['↗','🥤','🛁','🍽','🪑','🧹','🛒','🚌','🙂','✚'];
+  main.innerHTML=`<div class="progress"><strong>${done.size} of ${words.length}</strong> words practised on this device<div class="reward-total">★ ${totalStars()} stars earned</div>${MilestoneRewards.markup(totalStars())}</div>
+    <h1 class="topic-prompt">Choose a topic</h1>
+    <div class="grid">${categories.map((c,i)=>`<button class="topic" data-category="${escapeHtml(c.id)}"><span class="icon" aria-hidden="true">${escapeHtml(c.icon||icons[i]||'💬')}</span><strong>${escapeHtml(c.title)}</strong>${starsMarkup(topicStars(c.id),byCategory(c.id).length)}</button>`).join('')}</div>`;
+}
+function showCategory(id) {
+  categoryId=id; view='category'; const cat=categories.find(c=>c.id===id); heading(`${byCategory(id).length} words`,cat.title);
+  main.innerHTML=`<div class="topic-progress">${starsMarkup(topicStars(id),byCategory(id).length)}<button class="reset-stars" data-action="reset-stars">Reset Stars</button></div><p class="muted" data-topic-instructions>${topicInstructions()}</p><div class="word-list">${byCategory(id).map((w,i)=>`<div class="word-row"><button class="word-open" data-word="${i}"><img src="${photo(w)}" alt=""><span><strong lang="he" dir="rtl">${escapeHtml(w.hebrew)}</strong><span class="sound">${escapeHtml(w.pronunciation)}</span><small>${escapeHtml(w.english)}</small></span></button><button class="audio-choice" data-play-choice="${escapeHtml(w.id)}" aria-label="Hear ${escapeHtml(w.hebrew)}" title="${w.audioStatus==='user_verified'?'Hear Hebrew':'Audio awaiting review'}" ${w.audioStatus==='user_verified'&&w.audioAsset?'':'disabled'}>▶</button></div>`).join('')}</div>
+  <button class="primary" data-action="study">Start lesson</button><button class="secondary" data-action="quiz" data-quiz-label>${quizLabel()}</button>`;
+}
+function showWord(index) {
+  view='word'; wordIndex=index; const group=byCategory(categoryId), w=group[index]; heading(categories.find(c=>c.id===categoryId).title,'Learn the word');
+  const approved=w.audioStatus==='user_verified' && w.audioAsset;
+  main.innerHTML=`<div class="lesson-layout"><img class="hero" src="${photo(w)}" alt="${escapeHtml(w.english)}"><div class="lesson-content"><div class="counter">Word ${index+1} of ${group.length}</div>
+    <div class="hebrew" lang="he">${escapeHtml(w.hebrew)}</div><div class="pronunciation">${escapeHtml(w.pronunciation)}</div><div class="translation">${escapeHtml(w.english)}</div>
+    <button class="primary" data-action="play" ${approved?'':'disabled'}>▶ Hear in Hebrew</button>${approved?'':'<div class="notice">Hebrew audio is being checked. This button will work when the recording is approved.</div>'}
+    <div class="controls"><button class="secondary" data-action="prev" ${index===0?'disabled':''}>Previous</button><button class="secondary" data-action="next" ${index===group.length-1?'disabled':''}>Next</button></div>
+    <button class="secondary" data-action="quiz" data-quiz-label>${quizLabel()}</button></div></div>`;
+}
+function startQuiz() { quizStars=0; quizNewStars=0; showQuiz(0); }
+function showQuiz(index) {
+  view='quiz'; quizIndex=index; answered=false; attempts=0; const group=byCategory(categoryId), target=group[index]; heading(categories.find(c=>c.id===categoryId).title,'Choose the Hebrew word');
+  const choices=shuffled([target,...shuffled(group.filter(w=>w.id!==target.id)).slice(0,2)]);
+  quizChoiceCount=choices.length;
+  main.innerHTML=`<div class="quiz-rewards" id="quiz-rewards">${quizRewards()}</div><div class="lesson-layout"><img class="hero" src="${photo(target)}" alt="${escapeHtml(target.english)}"><div class="lesson-content"><p class="muted">Choose the matching Hebrew word. Get it right the first time to earn a star.</p><div class="quiz-meaning" lang="en" dir="ltr">${escapeHtml(target.english)}</div><div class="counter quiz-counter">Question ${index+1} of ${group.length}</div><div class="options">${choices.map(w=>`<div class="option"><button class="answer-select" data-answer="${escapeHtml(w.id)}"><span class="choice-hebrew" lang="he" dir="rtl">${escapeHtml(w.hebrew)}</span><span class="choice-sound">${escapeHtml(w.pronunciation)}</span></button><button class="audio-choice" data-play-choice="${escapeHtml(w.id)}" aria-label="Hear ${escapeHtml(w.hebrew)}" title="${w.audioStatus==='user_verified'?'Hear Hebrew':'Audio awaiting review'}" ${w.audioStatus==='user_verified'&&w.audioAsset?'':'disabled'}>▶</button></div>`).join('')}</div><div class="feedback" id="feedback" aria-live="polite"></div><button class="primary" id="continue" data-action="continue" hidden>${index===group.length-1?'Finish':'Next question'}</button></div></div>`;
+}
+function showQuizResult() {
+  view='quiz-result'; heading('Quiz complete','Well done!');
+  const count=byCategory(categoryId).length;
+  main.innerHTML=`<div class="quiz-result">${starsMarkup(topicStars(categoryId),count)}<h2>${quizNewStars?`You earned ${quizNewStars} ${quizNewStars===1?'star':'stars'}!`:'Quiz complete!'}</h2><p>${quizStars} of ${count} correct on the first try.</p><p class="reward-total">★ ${totalStars()} stars in total</p></div><button class="primary" data-action="quiz">Try again</button><button class="secondary" data-action="topic">Back to topic</button>`;
+}
+let currentAudio;
+function playWord(w) {
+  if(w?.audioStatus!=='user_verified'||!w.audioAsset)return;
+  QuizFeedback.clear(); if(currentAudio)currentAudio.pause();
+  const volume=AppPreferences.effectiveVolume(); if(volume<=0)return;
+  currentAudio=new Audio(audioUrl(w)); currentAudio.volume=volume;
+  currentAudio.play()?.catch(()=>{});
+}
+const settingsDialog=document.getElementById('settings-dialog');
+const soundControl=document.getElementById('setting-sound');
+const volumeControl=document.getElementById('setting-volume');
+const picturesControl=document.getElementById('setting-pictures');
+const layoutControl=document.getElementById('setting-layout');
+let appliedLayout=null;
+function applySettings(settings) {
+  soundControl.checked=settings.soundEnabled; volumeControl.value=Math.round(settings.volume*100);
+  volumeControl.disabled=!settings.soundEnabled;
+  document.getElementById('volume-value').textContent=`${Math.round(settings.volume*100)}%`;
+  picturesControl.checked=settings.showPictures;
+  layoutControl.value=settings.layout;
+  document.body.classList.toggle('without-pictures',!settings.showPictures);
+  document.body.classList.toggle('tablet-layout',settings.layout==='ktc-24');
+  if(appliedLayout!==settings.layout){
+    appliedLayout=settings.layout;
+    try{globalThis.AndroidLayout?.setLayout(settings.layout);}catch(_){}
+  }
+  document.querySelectorAll('[data-quiz-label]').forEach(el=>{el.textContent=quizLabel();});
+  document.querySelectorAll('[data-topic-instructions]').forEach(el=>{el.textContent=topicInstructions();});
+  QuizFeedback.clear();
+  if(currentAudio){currentAudio.volume=AppPreferences.effectiveVolume();if(currentAudio.volume===0)currentAudio.pause();}
+}
+function closeSettings() { settingsDialog.close();document.getElementById('reset-confirm').hidden=true;document.getElementById('settings-open').focus(); }
+document.getElementById('settings-open').addEventListener('click',()=>{if(currentAudio)currentAudio.pause();QuizFeedback.clear();document.getElementById('reset-confirm').hidden=true;settingsDialog.showModal();});
+document.getElementById('settings-close').addEventListener('click',closeSettings);
+settingsDialog.addEventListener('cancel',event=>{event.preventDefault();closeSettings();});
+soundControl.addEventListener('change',()=>AppPreferences.set({soundEnabled:soundControl.checked}));
+volumeControl.addEventListener('input',()=>AppPreferences.set({volume:Number(volumeControl.value)/100}));
+picturesControl.addEventListener('change',()=>AppPreferences.set({showPictures:picturesControl.checked}));
+layoutControl.addEventListener('change',()=>AppPreferences.set({layout:layoutControl.value}));
+document.getElementById('reset-game').addEventListener('click',()=>{document.getElementById('reset-confirm').hidden=false;document.getElementById('reset-cancel').focus();});
+document.getElementById('reset-cancel').addEventListener('click',()=>{document.getElementById('reset-confirm').hidden=true;document.getElementById('reset-game').focus();});
+function resetGame() {
+  if(currentAudio){currentAudio.pause();currentAudio=null;} QuizFeedback.clear();MilestoneRewards.dismiss();
+  starredWords.clear();done.clear();quizStars=0;quizNewStars=0;attempts=0;answered=false;quizIndex=0;wordIndex=0;categoryId='';
+  save();AppPreferences.reset();closeSettings();showHome();
+}
+document.getElementById('reset-confirm-button').addEventListener('click',resetGame);
+AppPreferences.subscribe(applySettings);
+main.addEventListener('click', event => {
+  const button=event.target.closest('button'); if(!button) return;
+  if(button.dataset.category) return showCategory(button.dataset.category);
+  if(button.dataset.word!==undefined) return showWord(Number(button.dataset.word));
+  if(button.dataset.playChoice){playWord(byId(button.dataset.playChoice));return;}
+  if(button.dataset.answer && view==='quiz') {
+    if(answered || button.disabled)return;
+    const group=byCategory(categoryId), target=group[quizIndex], correct=button.dataset.answer===target.id;
+    const firstTry=attempts===0; attempts++;
+    const starsBefore=totalStars();
+    if(correct){
+      answered=true;done.add(target.id);
+      const earnedStar=firstTry && !starredWords.has(target.id);
+      if(firstTry)quizStars++;
+      if(earnedStar){starredWords.add(target.id);quizNewStars++;}
+      save();
+      document.querySelectorAll('.answer-select').forEach(el=>{el.disabled=true;});
+      button.closest('.option').classList.add('correct');
+      document.getElementById('quiz-rewards').innerHTML=quizRewards();
+      document.getElementById('feedback').textContent=(earnedStar?'Correct! +1 star. ':'Correct! ')+target.hebrew+' · '+target.pronunciation;
+      document.getElementById('continue').hidden=false;
+    }else{
+      button.disabled=true;
+      button.closest('.option').classList.add('wrong','eliminated');
+      const remaining=quizChoiceCount-attempts;
+      document.getElementById('feedback').textContent=remaining===1?'Try again. Choose the remaining answer.':`Try again. Choose from the ${remaining} remaining answers.`;
+    }
+    if(currentAudio)currentAudio.pause();
+    if(!MilestoneRewards.check(starsBefore,totalStars(),document.getElementById('continue')))QuizFeedback.show(correct, button.closest('.option'));
+    return;
+  }
+  switch(button.dataset.action){
+    case 'study':showWord(0);break;
+    case 'quiz':startQuiz();break;
+    case 'topic':showCategory(categoryId);break;
+    case 'reset-stars':if(view==='category')resetTopicStars(categoryId);break;
+    case 'prev':showWord(wordIndex-1);break;
+    case 'next':showWord(wordIndex+1);break;
+    case 'continue':if(view==='quiz'&&answered){quizIndex<byCategory(categoryId).length-1?showQuiz(quizIndex+1):showQuizResult();}break;
+    case 'play':playWord(byCategory(categoryId)[wordIndex]);break;
+  }
+});
+back.addEventListener('click',()=>{if(view==='category') showHome(); else showCategory(categoryId);});
+globalThis.addEventListener('hebrew:pause',()=>{QuizFeedback.clear();if(currentAudio)currentAudio.pause();});
+showHome();
+applySettings(AppPreferences.get());
+</script>
+</body>
+</html>
