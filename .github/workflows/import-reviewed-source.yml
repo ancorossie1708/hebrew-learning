@@ -1,0 +1,70 @@
+name: Import reviewed application source
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    if: github.repository == 'ancorossie1708/hebrew-learning' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Download the reviewed source archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/reviewed-source"
+          gh release download v0.5.1-build.101 --pattern hebrew-learning-source.zip --dir "$RUNNER_TEMP/reviewed-source"
+      - name: Verify and import app files only
+        run: |
+          python - <<'PY'
+          import hashlib, os, stat, zipfile
+          from pathlib import Path, PurePosixPath
+          archive=Path(os.environ['RUNNER_TEMP'])/'reviewed-source/hebrew-learning-source.zip'
+          expected='18c43f5e953f98f3f5bc63b50a0844abdb27d76dc9818e0f05e598d0901f6829'
+          assert hashlib.sha256(archive.read_bytes()).hexdigest()==expected, 'Source archive checksum mismatch'
+          root=Path(os.environ['GITHUB_WORKSPACE']).resolve()
+          with zipfile.ZipFile(archive) as package:
+              files=[item for item in package.infolist() if not item.is_dir()]
+              assert len(files)==275, 'Unexpected source archive contents'
+              for item in files:
+                  path=PurePosixPath(item.filename)
+                  assert not path.is_absolute() and '..' not in path.parts and '\\' not in item.filename
+                  assert path.parts[0] in {'.github','.gitignore','README.md','android-app','content','prototype','tools'}
+                  assert not stat.S_ISLNK(item.external_attr >> 16)
+                  assert not item.filename.endswith(('.p12','.pfx','.jks','.keystore'))
+                  # Workflow creation is performed by the owner in GitHub's editor.
+                  # The import token writes application files only.
+                  if path.parts[0]=='.github':
+                      continue
+                  target=root.joinpath(*path.parts).resolve()
+                  assert target.is_relative_to(root)
+                  target.parent.mkdir(parents=True,exist_ok=True)
+                  target.write_bytes(package.read(item))
+          PY
+      - name: Check the imported app
+        run: |
+          python tools/build_prototype.py
+          python tools/sync_android_assets.py
+          node tools/test_quiz_rewards.cjs
+          node tools/test_quiz_feedback.cjs
+          node tools/test_milestones.cjs
+          node tools/test_audio_recording.cjs
+      - name: Commit reviewed app to main
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .gitignore README.md android-app content prototype tools
+          git commit -m 'Add reviewed Hebrew Learning application and approved runtime assets'
+          git push origin HEAD:main
