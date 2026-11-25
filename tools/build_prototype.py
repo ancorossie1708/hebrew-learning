@@ -11,6 +11,9 @@ template = ROOT / "prototype" / "app.template.html"
 output = ROOT / "prototype" / "index.html"
 
 data = json.loads(source.read_text(encoding="utf-8"))
+data["categories"] = [category for category in data["categories"] if category.get("releaseEnabled", True)]
+active_categories = {category["id"] for category in data["categories"]}
+data["words"] = [word for word in data["words"] if word["categoryId"] in active_categories]
 for word in data["words"]:
     if word.get("audioAsset"):
         word["audioSha256"] = hashlib.sha256((source.parent / word["audioAsset"]).read_bytes()).hexdigest()

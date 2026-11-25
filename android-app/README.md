@@ -5,10 +5,12 @@ and picture-to-Hebrew quiz screens from `prototype/index.html`. Run
 `python tools/build_prototype.py` and `python tools/sync_android_assets.py`
 from the workspace root after changing the vocabulary or screens.
 
-The active vocabulary is `content/vocabulary.json`: 120 words, twelve topics with ten entries each.
+The authoring vocabulary is `content/vocabulary.json`: 160 approved words. The
+release selects 140 words in fourteen topics, deferring Swear words and Everyday
+sentences 2 while retaining their assets for later use.
 The original approved 30-word snapshot remains in `content/seed-30.json`.
 
-All 120 audio clips are user-verified and bundled without re-encoding. Build
+All 140 selected audio clips are user-verified and bundled without re-encoding. Build
 copies of the photo masters use WebP to reduce the installation download.
 The native shell supports checked GitHub content/app updates and a permanent
 release signing identity. Public download/update access still depends on the

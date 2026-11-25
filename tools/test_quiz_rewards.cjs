@@ -15,10 +15,23 @@ const html=fs.readFileSync('prototype/index.html','utf8');
 const scripts=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)];
 const seed=scripts.find(s=>s[1].includes('application/json'))[2];
 const code=scripts.at(-1)[2];
+const frozenProgress=JSON.parse(fs.readFileSync('tools/fixtures/progress-v0.5.1.json','utf8'));
+const activeIds=new Set(JSON.parse(seed).words.map(w=>w.id));
+// Published IDs are learner records: additions may never rename/remove them silently.
+for(const id of frozenProgress.publishedWordIds)assert.ok(activeIds.has(id),`Published word ID changed or removed: ${id}`);
+// Changing the installed app identity or storage origin would create an empty profile.
+const installedIdentity=frozenProgress.android;
+const escapePattern=value=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const gradleSource=fs.readFileSync('android-app/app/build.gradle.kts','utf8');
+const nativeSource=fs.readFileSync('android-app/app/src/main/java/org/hebrewlearning/app/MainActivity.java','utf8');
+assert.match(gradleSource,new RegExp('applicationId\\s*=\\s*'+escapePattern(JSON.stringify(installedIdentity.applicationId))));
+assert.match(nativeSource,new RegExp('HOST\\s*=\\s*'+escapePattern(JSON.stringify(installedIdentity.originHost))));
+assert.match(nativeSource,new RegExp('START\\s*=\\s*"https://"\\s*\\+\\s*HOST\\s*\\+\\s*'+escapePattern(JSON.stringify(installedIdentity.entryPath))));
+assert.equal(fs.readFileSync('android-app/signing-certificate.sha256','utf8').trim(),installedIdentity.signingCertificateSha256);
 
-function app(storage){
+function app(storage,catalog=JSON.parse(seed),options={}){
   let answers=[];
-  const elements={main:makeElement(),back:makeElement(),eyebrow:makeElement(),title:makeElement(),seed:{textContent:seed}};
+  const elements={main:makeElement(),back:makeElement(),eyebrow:makeElement(),title:makeElement(),seed:{textContent:JSON.stringify(catalog)}};
   Object.defineProperty(elements.main,'innerHTML',{get(){return this.markup;},set(value){
     this.markup=value;answers=[];
     for(const match of value.matchAll(/<button class="answer-select" data-answer="([^"]+)"/g)){
@@ -28,16 +41,17 @@ function app(storage){
     elements.feedback=makeElement();elements['quiz-rewards']=makeElement();elements.continue=makeElement();
     elements.continue.hidden=/<button[^>]*id="continue"[^>]*\bhidden/.test(value);
   }});
-  const effects=[],milestones=[],audio=[],body=makeElement(),layoutRequests=[];
+  const effects=[],milestones=[],audio=[],body=makeElement(),layoutRequests=[],capacities=[];
   const context=vm.createContext({addEventListener(){},AndroidLayout:{setLayout(value){layoutRequests.push(value);}},document:{body,getElementById:id=>elements[id]||(elements[id]=makeElement()),querySelectorAll:selector=>selector==='.answer-select'?answers:[]},
     localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},
-    MilestoneRewards:{configure(){},dismiss(){},markup(){return '';},check(before,after){if(before<after && after%10===0)milestones.push(after);return false;}},
+    MilestoneRewards:{configure(count){capacities.push(count);},dismiss(){},markup(){return '';},check(before,after){if(before<after && after%10===0)milestones.push(after);return false;}},
     QuizFeedback:{clear(){},show(correct){effects.push(correct);}},Audio:class{constructor(src){this.src=src;audio.push(this);}pause(){this.paused=true;}play(){this.played=true;}}});
   vm.runInContext(fs.readFileSync('prototype/preferences.js','utf8'),context);
-  vm.runInContext(code,context);
+  if(options.nativeCatalog)context.HebrewLearningNative={getVocabulary:()=>JSON.stringify(options.nativeCatalog)};
+  vm.runInContext(options.code||code,context);
   const run=expression=>vm.runInContext(expression,context);
   const click=button=>elements.main.listeners.click({target:{closest:()=>button}});
-  return {elements,effects,milestones,audio,body,layoutRequests,run,answers:()=>answers,
+  return {elements,effects,milestones,audio,body,layoutRequests,capacities,run,answers:()=>answers,
     answer(id){click(answers.find(b=>b.dataset.answer===id));},
     wrong(){const target=run('byCategory(categoryId)[quizIndex].id');const button=answers.find(b=>!b.disabled && b.dataset.answer!==target);click(button);return button.dataset.answer;},
     action(name){const b=makeElement();b.dataset.action=name;click(b);},
@@ -111,7 +125,7 @@ assert.equal(afterReset.run('totalStars()'),1);
 assert.equal(afterReset.run("topicStars('kitchen')"),1);
 assert.equal(afterReset.run('done.size'),11);
 
-// The explicit fresh start clears every old star once, preserving learned words.
+// Updating/opening the app must never repeat the historical one-off reset.
 const practised=JSON.parse(seed).words.slice(0,13).map(w=>w.id);
 const legacyStorage=new Map([
   ['hebrew-learning-stars-v1','2'],
@@ -119,15 +133,15 @@ const legacyStorage=new Map([
   ['hebrew-care-done',JSON.stringify(practised)]
 ]);
 const migrated=app(legacyStorage);
-assert.equal(migrated.run('totalStars()'),0);
-assert.equal(migrated.run('categories.reduce((sum,c)=>sum+topicStars(c.id),0)'),0);
+assert.equal(migrated.run('totalStars()'),2);
+assert.equal(migrated.run('categories.reduce((sum,c)=>sum+topicStars(c.id),0)'),2);
 assert.equal(migrated.run('done.size'),13);
-assert.match(migrated.elements.main.innerHTML,/0 stars earned/);
+assert.match(migrated.elements.main.innerHTML,/2 stars earned/);
 migrated.run("showCategory('shopping');startQuiz();");migrated.answer('shopping_buy');
-assert.equal(migrated.run('totalStars()'),1);
+assert.equal(migrated.run('totalStars()'),2);
 assert.equal(migrated.run("topicStars('shopping')"),1);
-assert.equal(legacyStorage.has('hebrew-learning-stars-v1'),false);
-assert.equal(app(legacyStorage).run('totalStars()'),1);
+assert.equal(legacyStorage.get('hebrew-learning-stars-v1'),'2');
+assert.equal(app(legacyStorage).run('totalStars()'),2);
 const mismatched=app(new Map([
   ['hebrew-learning-star-reset-version',storage.get('hebrew-learning-star-reset-version')],
   ['hebrew-learning-stars-v1','99'],
@@ -206,4 +220,96 @@ assert.equal(app(settingStorage).run('totalStars()'),0);
 const corrupt=app(new Map([['hebrew-learning-settings-v1','broken JSON']]));
 assert.equal(corrupt.run('AppPreferences.effectiveVolume()'),1);
 assert.equal(corrupt.run('AppPreferences.get().layout'),'phone');
-console.log('Rewards, all milestones, persistent sound/picture/layout settings, active-quiz preservation and full reset passed');
+
+// Upgrade the frozen synthetic learner from the released 120-word version.
+const sourceCatalog=JSON.parse(seed);
+assert.equal(sourceCatalog.words.length,140,'Release includes the original 120 plus Sentences 1 and Politics');
+assert.equal(sourceCatalog.categories.length,14);
+assert.ok(sourceCatalog.categories.some(c=>c.id==='sentences_1'));
+assert.ok(sourceCatalog.categories.some(c=>c.id==='politics'));
+assert.ok(!sourceCatalog.categories.some(c=>c.id==='sentences_2'||c.id==='swear_words'));
+const deferredStorage=new Map(Object.entries(frozenProgress.storage));
+const deferredStars=JSON.parse(deferredStorage.get('hebrew-learning-word-stars-v1'));
+const deferredDone=JSON.parse(deferredStorage.get('hebrew-care-done'));
+for(const id of ['swear_words_stupid','sentences_2_explain_again']){deferredStars.push(id);deferredDone.push(id);}
+deferredStorage.set('hebrew-learning-word-stars-v1',JSON.stringify(deferredStars));
+deferredStorage.set('hebrew-care-done',JSON.stringify(deferredDone));
+const selectedRelease=app(deferredStorage,sourceCatalog);
+assert.equal(selectedRelease.run('totalStars()'),68);
+assert.equal(selectedRelease.run('practisedCount()'),92);
+assert.deepEqual(selectedRelease.capacities,[140]);
+selectedRelease.run('save()');
+assert.ok(JSON.parse(deferredStorage.get('hebrew-learning-word-stars-v1')).includes('swear_words_stupid'));
+assert.ok(JSON.parse(deferredStorage.get('hebrew-care-done')).includes('sentences_2_explain_again'));
+const publishedIds=new Set(frozenProgress.publishedWordIds);
+const oldWords=sourceCatalog.words.filter(w=>publishedIds.has(w.id));
+const oldTopicIds=new Set(oldWords.map(w=>w.categoryId));
+const oldCatalog={categories:sourceCatalog.categories.filter(c=>oldTopicIds.has(c.id)),words:oldWords};
+const expandedCatalog=JSON.parse(JSON.stringify(oldCatalog));
+for(let topic=0;topic<4;topic++){
+  const id=`upgrade_fixture_topic_${topic}`;
+  expandedCatalog.categories.push({id,title:`Test-only expansion ${topic+1}`});
+  for(let index=0;index<10;index++)expandedCatalog.words.push({
+    ...oldWords[0],id:`${id}_word_${index}`,categoryId:id,hebrew:'בדיקה',english:'Test fixture only',pronunciation:'test'
+  });
+}
+assert.equal(oldCatalog.words.length,120);assert.equal(expandedCatalog.words.length,160);
+const upgradedStorage=new Map(Object.entries(frozenProgress.storage));
+const beforeOpening=JSON.stringify([...upgradedStorage]);
+// A data update delivers 160 words while the installed fallback bundle still has 120.
+const expanded=app(upgradedStorage,oldCatalog,{nativeCatalog:expandedCatalog});
+assert.deepEqual(expanded.capacities,[160]);
+assert.equal(JSON.stringify([...upgradedStorage]),beforeOpening,'Opening an update must not rewrite or reset saved records');
+assert.equal(expanded.run('totalStars()'),68);
+assert.equal(expanded.run('practisedCount()'),92);
+assert.equal(expanded.run('categories.reduce((sum,c)=>sum+topicStars(c.id),0)'),68);
+assert.equal(expanded.run("categories.filter(c=>c.id.startsWith('upgrade_fixture_')).reduce((sum,c)=>sum+topicStars(c.id),0)"),0);
+assert.match(expanded.elements.main.innerHTML,/92 of 160/);
+assert.equal(expanded.run('AppPreferences.get().soundEnabled'),false);
+assert.equal(expanded.run('AppPreferences.get().volume'),0.25);
+assert.equal(expanded.run('AppPreferences.get().showPictures'),false);
+assert.equal(expanded.run('AppPreferences.get().layout'),'ktc-24');
+assert.deepEqual(expanded.milestones,[],'An expansion/reopen must not replay old celebrations');
+const newWord='upgrade_fixture_topic_0_word_0';
+expanded.run("showCategory('upgrade_fixture_topic_0');startQuiz();");expanded.answer(newWord);
+assert.equal(expanded.run('totalStars()'),69);assert.equal(expanded.run('practisedCount()'),93);
+// A temporary catalog fallback hides the new entry but must retain its stored ID.
+const fallback=app(upgradedStorage,oldCatalog);
+assert.equal(fallback.run('totalStars()'),68);assert.equal(fallback.run('practisedCount()'),92);
+fallback.run('save()');
+assert.ok(JSON.parse(upgradedStorage.get('hebrew-learning-word-stars-v1')).includes(newWord));
+assert.ok(JSON.parse(upgradedStorage.get('hebrew-care-done')).includes(newWord));
+// The next APK bundles 160 words directly; the extra star and all settings reappear.
+const upgradedApk=app(upgradedStorage,expandedCatalog);
+assert.equal(upgradedApk.run('totalStars()'),69);assert.equal(upgradedApk.run('practisedCount()'),93);
+assert.equal(upgradedApk.run('AppPreferences.get().layout'),'ktc-24');
+assert.equal(upgradedApk.run('categories.reduce((sum,c)=>sum+topicStars(c.id),0)'),69);
+assert.deepEqual(upgradedApk.milestones,[]);
+for(const marker of [undefined,'old-version']){
+  const missingMarker=new Map(Object.entries(frozenProgress.storage));
+  if(marker===undefined)missingMarker.delete('hebrew-learning-star-reset-version');
+  else missingMarker.set('hebrew-learning-star-reset-version',marker);
+  const safeUpgrade=app(missingMarker,expandedCatalog);
+  assert.equal(safeUpgrade.run('totalStars()'),68,'An absent/outdated old reset marker must never erase stars');
+  assert.equal(safeUpgrade.run('practisedCount()'),92);
+}
+const completedStorage=new Map(Object.entries(frozenProgress.storage));
+completedStorage.set('hebrew-learning-word-stars-v1',JSON.stringify(frozenProgress.publishedWordIds));
+completedStorage.set('hebrew-care-done',JSON.stringify(frozenProgress.publishedWordIds));
+const completedUpgrade=app(completedStorage,expandedCatalog);
+assert.equal(completedUpgrade.run('totalStars()'),120);
+assert.equal(completedUpgrade.run('practisedCount()'),120);
+assert.match(completedUpgrade.elements.main.innerHTML,/120 of 160/);
+for(const category of oldCatalog.categories)assert.equal(completedUpgrade.run(`topicStars(${JSON.stringify(category.id)})`),10);
+// Merely opening/cancelling Reset keeps every record; only confirmation clears them.
+upgradedApk.elements['settings-open'].listeners.click();upgradedApk.elements['reset-game'].listeners.click();
+assert.equal(upgradedApk.run('totalStars()'),69);
+upgradedApk.elements['reset-cancel'].listeners.click();assert.equal(upgradedApk.run('practisedCount()'),93);
+upgradedApk.elements['reset-game'].listeners.click();upgradedApk.elements['reset-confirm-button'].listeners.click();
+assert.equal(upgradedApk.run('totalStars()'),0);assert.equal(upgradedApk.run('practisedCount()'),0);
+assert.equal(upgradedApk.run('AppPreferences.get().layout'),'phone');
+assert.deepEqual(JSON.parse(upgradedStorage.get('hebrew-learning-word-stars-v1')),[]);
+assert.deepEqual(JSON.parse(upgradedStorage.get('hebrew-care-done')),[]);
+assert.equal(upgradedStorage.get('hebrew-learning-audio-review-v1'),'synthetic-review-evidence');
+assert.equal(app(upgradedStorage,expandedCatalog).run('totalStars()'),0);
+console.log('Quiz/rewards/settings/reset and Android identity guards passed; released progress survives simulated 120→160 catalog/app upgrades and fallback');

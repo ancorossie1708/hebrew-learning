@@ -164,9 +164,9 @@
       body.tablet-layout.without-pictures .lesson-layout { display:block; max-width:900px; margin:auto; }
     }
     @media(min-width:1400px) {
-      body.tablet-layout.home-screen main { grid-template-columns:360px minmax(0,1fr); gap:24px 32px; }
-      body.tablet-layout.home-screen .grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:20px; }
-      body.tablet-layout .topic { font-size:25px; min-height:180px; }
+      body.tablet-layout.home-screen main { grid-template-columns:360px minmax(0,1fr); gap:24px 32px; padding-bottom:16px; }
+      body.tablet-layout.home-screen .grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+      body.tablet-layout .topic { font-size:25px; min-height:172px; padding:16px; }
     }
   </style>
 </head>
@@ -183,6 +183,7 @@
   <label class="setting-row" for="setting-pictures"><span>Show pictures</span><input id="setting-pictures" type="checkbox" checked></label>
   <label class="layout-label" for="setting-layout">Screen layout</label><select id="setting-layout"><option value="phone">Phone — portrait</option><option value="ktc-24">KTC 24.5″ — 1920×1080 (16:9)</option></select>
   <div id="native-updates" hidden><p id="app-version" class="muted"></p><button class="secondary" id="check-updates">Check for updates</button><p class="muted" id="native-update-status" role="status"></p></div>
+  <details id="photo-credits"><summary>Photo credits</summary><div id="photo-credits-list" class="muted"></div></details>
   <button class="secondary reset-game" id="reset-game">Reset game</button>
   <div class="reset-confirm" id="reset-confirm" hidden><p>Reset all stars, rewards, practised words and settings?</p><div class="controls"><button class="secondary" id="reset-cancel">Cancel</button><button class="primary" id="reset-confirm-button">Reset game</button></div></div>
 </dialog>
@@ -213,23 +214,19 @@ const main = document.getElementById('main');
 const back = document.getElementById('back');
 let view = 'home', categoryId = '', wordIndex = 0, quizIndex = 0, answered = false;
 let attempts = 0, quizStars = 0, quizNewStars = 0, quizChoiceCount = 3;
-let starredWords = new Set();
-let done = new Set();
-try { done = new Set(JSON.parse(localStorage.getItem('hebrew-care-done') || '[]')); } catch (_) {}
-// Apply the user's requested fresh start once. Later reloads retain new rewards.
-const starResetVersion='2026-10-22-fresh-start-1';
-try {
-  if(localStorage.getItem('hebrew-learning-star-reset-version')!==starResetVersion){
-    localStorage.removeItem('hebrew-learning-stars-v1');
-    localStorage.removeItem('hebrew-learning-word-stars-v1');
-    localStorage.setItem('hebrew-learning-star-reset-version',starResetVersion);
-  }else{
-    const stored=JSON.parse(localStorage.getItem('hebrew-learning-word-stars-v1') || '[]');
-    if(Array.isArray(stored))starredWords=new Set(stored.filter(id=>byId(id)));
-  }
-} catch (_) {}
-// Every displayed total comes from the same word IDs used by the topic stars.
-function totalStars() { return starredWords.size; }
+// Stable word IDs and storage keys survive app/content updates. Reset is explicit only.
+// Retain IDs outside the active catalog too: a temporary fallback must not erase them.
+function savedWordIds(key) {
+  try {
+    const stored=JSON.parse(localStorage.getItem(key) || '[]');
+    return new Set(Array.isArray(stored)?stored.filter(id=>typeof id==='string' && id.length>0):[]);
+  } catch (_) { return new Set(); }
+}
+let starredWords = savedWordIds('hebrew-learning-word-stars-v1');
+let done = savedWordIds('hebrew-care-done');
+// Display only active words, so topic counters and totals always agree.
+function totalStars() { return words.filter(w=>starredWords.has(w.id)).length; }
+function practisedCount() { return words.filter(w=>done.has(w.id)).length; }
 function save() { try { localStorage.setItem('hebrew-care-done', JSON.stringify([...done])); localStorage.setItem('hebrew-learning-word-stars-v1', JSON.stringify([...starredWords])); } catch (_) {} }
 function starsMarkup(earned, count) { return `<span class="star-icons" role="img" aria-label="${earned} of ${count} stars">${Array.from({length:count},(_,i)=>`<svg viewBox="0 0 24 24" aria-hidden="true"${i<earned?'':' class="star-empty"'} fill="${i<earned?'currentColor':'none'}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="m12 2.5 2.9 5.88 6.49.94-4.7 4.58 1.11 6.47-5.8-3.06-5.8 3.06 1.11-6.47-4.7-4.58 6.49-.94Z"/></svg>`).join('')}</span>`; }
 function topicStars(id) { return byCategory(id).filter(w=>starredWords.has(w.id)).length; }
@@ -244,20 +241,20 @@ function heading(eyebrow, title) { QuizFeedback.clear(); globalThis.NativeUpdate
 function showHome() {
   view='home'; heading('','');
   const icons=['↗','🥤','🛁','🍽','🪑','🧹','🛒','🚌','🙂','✚'];
-  main.innerHTML=`<div class="progress"><strong>${done.size} of ${words.length}</strong> words practised on this device<div class="reward-total">★ ${totalStars()} stars earned</div>${MilestoneRewards.markup(totalStars())}</div>
+  main.innerHTML=`<div class="progress"><strong>${practisedCount()} of ${words.length}</strong> words practised on this device<div class="reward-total">★ ${totalStars()} stars earned</div>${MilestoneRewards.markup(totalStars())}</div>
     <h1 class="topic-prompt">Choose a topic</h1>
     <div class="grid">${categories.map((c,i)=>`<button class="topic" data-category="${escapeHtml(c.id)}"><span class="icon" aria-hidden="true">${escapeHtml(c.icon||icons[i]||'💬')}</span><strong>${escapeHtml(c.title)}</strong>${starsMarkup(topicStars(c.id),byCategory(c.id).length)}</button>`).join('')}</div>`;
 }
 function showCategory(id) {
   categoryId=id; view='category'; const cat=categories.find(c=>c.id===id); heading(`${byCategory(id).length} words`,cat.title);
-  main.innerHTML=`<div class="topic-progress">${starsMarkup(topicStars(id),byCategory(id).length)}<button class="reset-stars" data-action="reset-stars">Reset Stars</button></div><p class="muted" data-topic-instructions>${topicInstructions()}</p><div class="word-list">${byCategory(id).map((w,i)=>`<div class="word-row"><button class="word-open" data-word="${i}"><img src="${photo(w)}" alt=""><span><strong lang="he" dir="rtl">${escapeHtml(w.hebrew)}</strong><span class="sound">${escapeHtml(w.pronunciation)}</span><small>${escapeHtml(w.english)}</small></span></button><button class="audio-choice" data-play-choice="${escapeHtml(w.id)}" aria-label="Hear ${escapeHtml(w.hebrew)}" title="${w.audioStatus==='user_verified'?'Hear Hebrew':'Audio awaiting review'}" ${w.audioStatus==='user_verified'&&w.audioAsset?'':'disabled'}>▶</button></div>`).join('')}</div>
+  main.innerHTML=`<div class="topic-progress">${starsMarkup(topicStars(id),byCategory(id).length)}<button class="reset-stars" data-action="reset-stars">Reset Stars</button></div>${cat.usageNote?`<p class="notice">${escapeHtml(cat.usageNote)}</p>`:''}<p class="muted" data-topic-instructions>${topicInstructions()}</p><div class="word-list">${byCategory(id).map((w,i)=>`<div class="word-row"><button class="word-open" data-word="${i}"><img src="${photo(w)}" alt=""><span><strong lang="he" dir="rtl">${escapeHtml(w.hebrew)}</strong><span class="sound">${escapeHtml(w.pronunciation)}</span><small>${escapeHtml(w.english)}</small></span></button><button class="audio-choice" data-play-choice="${escapeHtml(w.id)}" aria-label="Hear ${escapeHtml(w.hebrew)}" title="${w.audioStatus==='user_verified'?'Hear Hebrew':'Audio awaiting review'}" ${w.audioStatus==='user_verified'&&w.audioAsset?'':'disabled'}>▶</button></div>`).join('')}</div>
   <button class="primary" data-action="study">Start lesson</button><button class="secondary" data-action="quiz" data-quiz-label>${quizLabel()}</button>`;
 }
 function showWord(index) {
   view='word'; wordIndex=index; const group=byCategory(categoryId), w=group[index]; heading(categories.find(c=>c.id===categoryId).title,'Learn the word');
   const approved=w.audioStatus==='user_verified' && w.audioAsset;
   main.innerHTML=`<div class="lesson-layout"><img class="hero" src="${photo(w)}" alt="${escapeHtml(w.english)}"><div class="lesson-content"><div class="counter">Word ${index+1} of ${group.length}</div>
-    <div class="hebrew" lang="he">${escapeHtml(w.hebrew)}</div><div class="pronunciation">${escapeHtml(w.pronunciation)}</div><div class="translation">${escapeHtml(w.english)}</div>
+    <div class="hebrew" lang="he" dir="rtl">${escapeHtml(w.hebrew)}</div><div class="pronunciation">${escapeHtml(w.pronunciation)}</div><div class="translation">${escapeHtml(w.english)}</div>${w.usageNote?`<p class="muted">${escapeHtml(w.usageNote)}</p>`:''}
     <button class="primary" data-action="play" ${approved?'':'disabled'}>▶ Hear in Hebrew</button>${approved?'':'<div class="notice">Hebrew audio is being checked. This button will work when the recording is approved.</div>'}
     <div class="controls"><button class="secondary" data-action="prev" ${index===0?'disabled':''}>Previous</button><button class="secondary" data-action="next" ${index===group.length-1?'disabled':''}>Next</button></div>
     <button class="secondary" data-action="quiz" data-quiz-label>${quizLabel()}</button></div></div>`;
@@ -283,6 +280,10 @@ function playWord(w) {
   currentAudio.play()?.catch(()=>{});
 }
 const settingsDialog=document.getElementById('settings-dialog');
+document.getElementById('photo-credits-list').innerHTML=words.filter(w=>w.imageSource?.type==='wikimedia_commons').map(w=>{
+  const source=w.imageSource;
+  return `<p><strong>${escapeHtml(w.english)}</strong><br>${escapeHtml(source.author)} · <a href="${escapeHtml(source.licenseUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.license)}</a><br><a href="${escapeHtml(source.sourcePage)}" target="_blank" rel="noopener noreferrer">Original photo and attribution</a><br>${escapeHtml(source.modifications)}</p>`;
+}).join('')||'<p>Vocabulary scenes were generated for Hebrew Learning.</p>';
 const soundControl=document.getElementById('setting-sound');
 const volumeControl=document.getElementById('setting-volume');
 const picturesControl=document.getElementById('setting-pictures');

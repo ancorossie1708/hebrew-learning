@@ -96,6 +96,35 @@ public final class OfflineLearningTest {
         } finally {bitmap.recycle();}
     }
 
+    @Test public void staleReleaseCannotReplaceNewerContent() throws Exception {
+        int installed=BuildConfig.VERSION_CODE;
+        org.json.JSONObject app=new org.json.JSONObject().put("version","0.5.1")
+                .put("versionCode",installed-1)
+                .put("apkUrl","https://github.com/ancorossie1708/hebrew-learning/releases/download/test/app.apk")
+                .put("sha256",String.format("%064d",0));
+        org.json.JSONObject content=new org.json.JSONObject().put("version","test-content")
+                .put("minAppVersionCode",1).put("files",new org.json.JSONArray().put(new org.json.JSONObject()
+                        .put("path","content/vocabulary.json")
+                        .put("url","https://github.com/ancorossie1708/hebrew-learning/releases/download/test/vocabulary.json")
+                        .put("bytes",1).put("sha256",String.format("%064d",0))));
+        org.json.JSONObject root=new org.json.JSONObject().put("schemaVersion",1).put("app",app).put("content",content);
+        UpdateManifest older=UpdateManifest.parse(root.toString());
+        assertFalse(older.contentCompatibleWith(installed));
+        ContentStore store=new ContentStore(InstrumentationRegistry.getInstrumentation().getTargetContext());
+        String active=store.activeVersion();
+        try {store.stage(older,(done,total,bytes)->{});fail("Older release content must be rejected before download");}
+        catch(java.io.IOException expected){assertTrue(expected.getMessage().contains("different app release"));}
+        assertEquals(active,store.activeVersion());
+        app.put("versionCode",installed);
+        assertTrue(UpdateManifest.parse(root.toString()).contentCompatibleWith(installed));
+        app.put("versionCode",installed+1);
+        assertTrue(UpdateManifest.parse(root.toString()).contentCompatibleWith(installed));
+        content.put("minAppVersionCode",installed+1);
+        assertFalse(UpdateManifest.parse(root.toString()).contentCompatibleWith(installed));
+        root.remove("app");content.put("minAppVersionCode",installed);
+        assertTrue(UpdateManifest.parse(root.toString()).contentCompatibleWith(installed));
+    }
+
     @Test public void wideTabletLayoutAndImages() throws Exception {
         // The desktop runner sets 160 dpi: landscape viewport matches the target 1920x1080.
         scenario=ActivityScenario.launch(MainActivity.class);
@@ -105,8 +134,8 @@ public final class OfflineLearningTest {
             long deadline=System.currentTimeMillis()+10000;
             while(!Boolean.TRUE.equals(js("innerWidth>=1800 && innerWidth>innerHeight")) && System.currentTimeMillis()<deadline)Thread.sleep(100);
             assertEquals("Tablet emulator must expose a wide viewport",Boolean.TRUE,js("innerWidth>=1800 && innerWidth>innerHeight"));
-            assertEquals(12,((Number)js("document.querySelectorAll('.topic').length")).intValue());
-            assertEquals("All twelve topics must fit the tablet screen",Boolean.TRUE,js("[...document.querySelectorAll('.topic')].every(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&r.right<=innerWidth;})"));
+            assertEquals(14,((Number)js("document.querySelectorAll('.topic').length")).intValue());
+            assertEquals("All fourteen topics must fit the tablet screen: "+js("JSON.stringify({width:innerWidth,height:innerHeight,topics:[...document.querySelectorAll('.topic')].map(e=>({title:e.textContent,bottom:e.getBoundingClientRect().bottom}))})"),Boolean.TRUE,js("[...document.querySelectorAll('.topic')].every(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&r.right<=innerWidth;})"));
             Thread.sleep(300);screenshot("tablet-topics");
             js("(showCategory('kitchen'),showWord(0),true)");
             deadline=System.currentTimeMillis()+10000;
@@ -123,8 +152,9 @@ public final class OfflineLearningTest {
         scenario=ActivityScenario.launch(MainActivity.class);
         try {
             ready();
-            assertEquals(120,((Number)js("words.length")).intValue());
-            assertEquals(12,((Number)js("categories.length")).intValue());
+            assertEquals(140,((Number)js("words.length")).intValue());
+            assertEquals(14,((Number)js("categories.length")).intValue());
+            assertEquals(Boolean.TRUE,js("categories.some(c=>c.id==='sentences_1') && categories.some(c=>c.id==='politics') && !categories.some(c=>c.id==='sentences_2'||c.id==='swear_words')"));
             assertEquals(Boolean.TRUE,js("words.every(w=>w.audioStatus==='user_verified')"));
             js("(resetGame(),true)");
             js("(showCategory('shopping'),startQuiz(),document.querySelector('.answer-select:not([data-answer=\"shopping_buy\"])').click(),true)");

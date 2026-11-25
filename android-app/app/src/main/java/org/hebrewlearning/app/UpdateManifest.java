@@ -96,6 +96,13 @@ final class UpdateManifest {
         }
     }
 
+    boolean contentCompatibleWith(int installedVersionCode) {
+        // A newly installed APK may briefly see GitHub's previous latest release.
+        // Never replace its newer bundled catalog with that older release's files.
+        return minAppVersionCode <= installedVersionCode &&
+                (appVersionCode == 0 || appVersionCode >= installedVersionCode);
+    }
+
     static String contentPath(String path) throws IOException {
         if (path == null || path.length() > 220 || !path.startsWith("content/") ||
                 !path.matches("[a-zA-Z0-9_./-]+") || path.endsWith("/")) {

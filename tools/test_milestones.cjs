@@ -50,4 +50,37 @@ for(const count of [10,20,30,40,50,60,70,80,90,100,110,120]){
   if(count===120)assert.match(dialogs.at(-1).innerHTML,/All 120 words/);
   rewards.dismiss();
 }
-console.log('All 10 milestones, special/grand tiers, earned badges, focus return and dismissal passed');
+// Expansion moves only the prominent targets; existing earned star counts stay intact.
+rewards.configure(160);
+const expandedMarkup=rewards.markup(120);
+assert.equal((expandedMarkup.match(/ unlocked/g)||[]).length,12);
+assert.equal((expandedMarkup.match(/ locked/g)||[]).length,4);
+assert.match(expandedMarkup,/special unlocked[^>]*[\s\S]*?80 stars: earned/);
+assert.match(expandedMarkup,/special locked[^>]*[\s\S]*?150 stars: not yet earned/);
+assert.match(expandedMarkup,/grand locked[^>]*[\s\S]*?160 stars: not yet earned/);
+for(let count=10;count<=160;count+=10){
+  assert.equal(rewards.check(count-1,count),true);
+  assert.equal(effects.at(-1).tier,count===160?'grand':count===80||count===150?'special':'standard');
+  if(count===80)assert.match(dialogs.at(-1).innerHTML,/Halfway there!/);
+  if(count===150)assert.match(dialogs.at(-1).innerHTML,/Just 10 more to reach 160!/);
+  if(count===160)assert.match(dialogs.at(-1).innerHTML,/All 160 words/);
+  rewards.dismiss();
+}
+assert.equal(rewards.check(120,120),false,'Reopening after expansion must not celebrate again');
+assert.equal(rewards.check(120,121),false);
+assert.equal(rewards.check(129,130),true);assert.equal(effects.at(-1).tier,'standard');rewards.dismiss();
+for(const invalid of [0,9,125,160.5,NaN])assert.throws(()=>rewards.configure(invalid),/complete ten-word topics/);
+assert.equal((rewards.markup(160).match(/ unlocked/g)||[]).length,16);
+rewards.configure(200);
+for(const [count,expected] of [[100,'special'],[190,'special'],[200,'grand']]){
+  rewards.check(count-1,count);assert.equal(effects.at(-1).tier,expected);rewards.dismiss();
+}
+rewards.configure(140);
+assert.equal((rewards.markup(120).match(/ unlocked/g)||[]).length,12);
+assert.equal((rewards.markup(120).match(/ locked/g)||[]).length,2);
+for(let count=10;count<=140;count+=10){
+  rewards.check(count-1,count);
+  assert.equal(effects.at(-1).tier,count===140?'grand':count===70||count===130?'special':'standard');
+  rewards.dismiss();
+}
+console.log('Dynamic milestones passed: 140 gives 70/130/140, 160 gives 80/150/160, 200 gives 100/190/200');

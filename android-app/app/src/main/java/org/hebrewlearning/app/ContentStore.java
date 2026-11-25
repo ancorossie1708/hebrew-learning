@@ -93,8 +93,8 @@ final class ContentStore {
 
     void stage(UpdateManifest manifest, Progress progress) throws IOException {
         if (manifest.files.isEmpty()) throw new IOException("The manifest has no content files.");
-        if (manifest.minAppVersionCode > BuildConfig.VERSION_CODE) {
-            throw new IOException("This content requires a newer app version.");
+        if (!manifest.contentCompatibleWith(BuildConfig.VERSION_CODE)) {
+            throw new IOException("This content batch targets a different app release.");
         }
         long declaredBytes = 0;
         for (UpdateManifest.MediaFile file : manifest.files) declaredBytes += Math.max(0, file.bytes);
@@ -261,7 +261,7 @@ final class ContentStore {
     private Generation loadGeneration(String id) throws IOException {
         File directory = generationDirectory(id);
         UpdateManifest manifest = UpdateManifest.parse(readAtomic(new AtomicFile(new File(directory, "manifest.json"))));
-        if (manifest.files.isEmpty() || manifest.minAppVersionCode > BuildConfig.VERSION_CODE) {
+        if (manifest.files.isEmpty() || !manifest.contentCompatibleWith(BuildConfig.VERSION_CODE)) {
             throw new IOException("Local content batch is incompatible.");
         }
         Set<String> paths = new HashSet<>();

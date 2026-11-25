@@ -84,7 +84,7 @@ final class LearningBridge {
                 UpdateManifest manifest = UpdateManifest.parse(SafeNetwork.fetchManifest(url));
                 lastManifest = manifest;
                 boolean appUpdate = manifest.appVersionCode > BuildConfig.VERSION_CODE;
-                boolean compatible = manifest.minAppVersionCode <= BuildConfig.VERSION_CODE;
+                boolean compatible = manifest.contentCompatibleWith(BuildConfig.VERSION_CODE);
                 boolean contentUpdate = !manifest.files.isEmpty() && compatible &&
                         !manifest.contentVersion.equals(content.activeVersion()) &&
                         !manifest.contentVersion.equals(content.readyVersion());

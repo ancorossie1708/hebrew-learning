@@ -27,7 +27,8 @@ def main():
 
     def device(*command, timeout=30, binary=False):
         return subprocess.check_output([adb, "-s", args.serial, *command],
-                                       env=env, timeout=timeout, text=not binary)
+                                       env=env, timeout=timeout, text=not binary,
+                                       encoding=None if binary else "utf-8")
 
     deadline = time.monotonic() + 180
     while True:

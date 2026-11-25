@@ -26,6 +26,16 @@ def prepare(output=ASSETS):
         raise ValueError("Build output must be a subdirectory of this project")
     source = json.loads((CONTENT / "vocabulary.json").read_text(encoding="utf-8"))
     data = copy.deepcopy(source)
+    data["categories"] = [category for category in data["categories"] if category.get("releaseEnabled", True)]
+    active_categories = {category["id"] for category in data["categories"]}
+    data["words"] = [word for word in data["words"] if word["categoryId"] in active_categories]
+    # Refuse an incomplete owner review before writing any generated bundle files.
+    for word in data["words"]:
+        if word.get("audioStatus") != "user_verified":
+            raise ValueError(f"Unapproved audio: {word['id']}")
+        clip = (CONTENT / word["audioAsset"]).resolve()
+        if not clip.is_relative_to(CONTENT) or digest(clip) != word["audioSha256"]:
+            raise ValueError(f"Audio approval checksum mismatch: {word['id']}")
     cache = ROOT / ".release-build/photos-webp-q90-v1"
     cache.mkdir(parents=True, exist_ok=True)
     ffmpeg = shutil.which("ffmpeg")
@@ -53,15 +63,11 @@ def prepare(output=ASSETS):
     wanted = set()
     # Export runtime fields only; owner review paths and source metadata stay local.
     fields = ("id", "categoryId", "hebrew", "english", "pronunciation", "imageAsset",
-              "audioAsset", "audioStatus", "audioSha256")
+              "audioAsset", "audioStatus", "audioSha256", "usageNote", "imageSource")
     runtime_words = []
     for word in data["words"]:
-        if word.get("audioStatus") != "user_verified":
-            raise ValueError(f"Unapproved audio: {word['id']}")
         clip = (CONTENT / word["audioAsset"]).resolve()
-        if not clip.is_relative_to(CONTENT) or digest(clip) != word["audioSha256"]:
-            raise ValueError(f"Audio approval checksum mismatch: {word['id']}")
-        runtime = {key: word[key] for key in fields}
+        runtime = {key: word[key] for key in fields if key in word}
         runtime["imageAsset"] = f"assets/photos/{word['id']}.webp"
         runtime_words.append(runtime)
         for relative, source_file in ((runtime["imageAsset"], photos[word["id"]]),

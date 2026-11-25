@@ -125,6 +125,10 @@ def artifacts():
     manifest = {"schemaVersion": 1, "app": {"version": version, "versionCode": code,
                 "apkUrl": release_base + "/hebrew-learning.apk", "sha256": sha(apk)}}
     manifest["content"] = dict(version=vocabulary["contentVersion"], minAppVersionCode=code, files=files)
+    active_media = {Path(file["path"]).name for file in files if file["path"] != "content/vocabulary.json"}
+    for old in media.iterdir():
+        if old.is_file() and old.name not in active_media:
+            old.unlink()
     if len(files) != 1 + 2 * len(vocabulary["words"]):
         raise ValueError("Incomplete release content batch")
     (ARTIFACTS / "release-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
