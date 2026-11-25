@@ -2,6 +2,19 @@ name: Import reviewed application source
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release or draft containing the reviewed source archive
+        required: true
+        default: v0.6.0-build.202
+      source_sha256:
+        description: Verified SHA-256 of hebrew-learning-source.zip
+        required: true
+        default: 1377370f37afa7ec09e5f8af7f0f698013db5367dc5f517725ee10188434d176
+      expected_files:
+        description: Expected number of files in the source archive
+        required: true
+        default: '317'
 
 permissions:
   contents: write
@@ -11,6 +24,10 @@ jobs:
     if: github.repository == 'ancorossie1708/hebrew-learning' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      SOURCE_SHA256: ${{ inputs.source_sha256 }}
+      EXPECTED_FILES: ${{ inputs.expected_files }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
@@ -24,28 +41,29 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          [[ "$RELEASE_TAG" =~ ^(v[0-9][A-Za-z0-9._-]*|untagged-[a-f0-9]+)$ ]]
           mkdir -p "$RUNNER_TEMP/reviewed-source"
-          gh release download v0.5.1-build.101 --pattern hebrew-learning-source.zip --dir "$RUNNER_TEMP/reviewed-source"
+          gh release download "$RELEASE_TAG" --pattern hebrew-learning-source.zip --dir "$RUNNER_TEMP/reviewed-source"
       - name: Verify and import app files only
         run: |
           python - <<'PY'
-          import hashlib, os, stat, zipfile
+          import hashlib, os, re, stat, zipfile
           from pathlib import Path, PurePosixPath
           archive=Path(os.environ['RUNNER_TEMP'])/'reviewed-source/hebrew-learning-source.zip'
-          expected='18c43f5e953f98f3f5bc63b50a0844abdb27d76dc9818e0f05e598d0901f6829'
+          expected=os.environ['SOURCE_SHA256']
+          assert re.fullmatch(r'[a-f0-9]{64}',expected), 'Invalid archive checksum'
           assert hashlib.sha256(archive.read_bytes()).hexdigest()==expected, 'Source archive checksum mismatch'
           root=Path(os.environ['GITHUB_WORKSPACE']).resolve()
           with zipfile.ZipFile(archive) as package:
               files=[item for item in package.infolist() if not item.is_dir()]
-              assert len(files)==275, 'Unexpected source archive contents'
+              assert len(files)==int(os.environ['EXPECTED_FILES']), 'Unexpected source archive contents'
+              assert sum(item.file_size for item in files)<256*1024*1024, 'Source archive too large'
               for item in files:
                   path=PurePosixPath(item.filename)
-                  assert not path.is_absolute() and '..' not in path.parts and '\\' not in item.filename
+                  assert not path.is_absolute() and '..' not in path.parts and chr(92) not in item.filename
                   assert path.parts[0] in {'.github','.gitignore','README.md','android-app','content','prototype','tools'}
                   assert not stat.S_ISLNK(item.external_attr >> 16)
                   assert not item.filename.endswith(('.p12','.pfx','.jks','.keystore'))
-                  # Workflow creation is performed by the owner in GitHub's editor.
-                  # The import token writes application files only.
                   if path.parts[0]=='.github':
                       continue
                   target=root.joinpath(*path.parts).resolve()
@@ -66,5 +84,6 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .gitignore README.md android-app content prototype tools
-          git commit -m 'Add reviewed Hebrew Learning application and approved runtime assets'
+          if git diff --cached --quiet; then echo 'Reviewed source is already current'; exit 0; fi
+          git commit -m 'Update Hebrew Learning to 140 approved items in 14 topics'
           git push origin HEAD:main
